@@ -1,6 +1,6 @@
-import Autograde
-import Link
-import Node
+from src import Autograde
+from src import Link
+from src import Node
 
 
 def test():

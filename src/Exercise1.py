@@ -1,5 +1,5 @@
-import Autograde
-import Link
+from src import Autograde
+from src import Link
 
 
 def test():

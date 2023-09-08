@@ -1,4 +1,4 @@
-import Node
+from src import Node
 
 
 class Zone(Node.Node):

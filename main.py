@@ -1,13 +1,13 @@
 
 
-import Exercise1
-import Exercise2
-import Exercise3
-import Exercise4
-import Exercise5
-import Exercise6
-import Exercise7
-import Exercise8
+from src import Exercise1
+from src import Exercise2
+from src import Exercise3
+from src import Exercise4
+from src import Exercise5
+from src import Exercise6
+from src import Exercise7
+from src import Exercise8
 
 if __name__ == '__main__':
-    Exercise8.test()
+    Exercise1.test()

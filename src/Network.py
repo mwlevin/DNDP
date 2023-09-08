@@ -1,7 +1,7 @@
-import Node
-import Link
-import Path
-import Zone
+from src import Node
+from src import Link
+from src import Path
+from src import Zone
 
 
 class Network:
@@ -121,7 +121,6 @@ class Network:
                 next = splitted[idx]
                 d = float(next[0:len(next) - 1])
                 
-                #print("add demand " + str(d) + " " + str(r) + " " + str(s))
                 r.addDemand(s, d)
                 
             idx += 1

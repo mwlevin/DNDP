@@ -1,8 +1,8 @@
-import Autograde
-import Link
-import Node
-import Path
-import Network
+from src import Autograde
+from src import Link
+from src import Node
+from src import Path
+from src import Network
 
 
 def test():

@@ -1,7 +1,7 @@
-import Autograde
-import Link
-import Node
-import Zone
+from src import Autograde
+from src import Link
+from src import Node
+from src import Zone
 
 
 def test(): 
