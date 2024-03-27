@@ -190,185 +190,46 @@ class Bush:
         return output;
     }
     
-    /*
-        Stack<Node> unvisited = new Stack<>();
-        
-        Set<Link> branchlinks = new HashSet<>();
-        
-        unvisited.add(endlink.getSource());
-        
-        while(!unvisited.isEmpty()){
-            Node j = unvisited.pop();
-            
-            for(Link ij : j.getIncoming()){
- 
-                if(contains(ij)){
-                    Node i = ij.getSource();
-                    
-                    branchlinks.add(ij);
-                    
-                    
-                    if(!i.visited){
-                        unvisited.push(i);
-                        i.visited = true;
-                    }
-                }
-            }
-        }
-
-
-        double maxflow = getFlow(endlink);
-        // now do Ford-Fulkerson to figure out branch flow on each link
-        // the "capacities" are the bush flow on each link
-        // due to conservation of flow I don't need to add flow in reverse. DFS will be sufficient.
-        Map<Link, Double> branchflows = new HashMap<>();
-        
-        for(Link l : branchlinks){
-            branchflows.put(l, 0.0);
-        }
-        
-        Node start = origin;
-        Node end = endlink.getSource();
-        branchflows.put(endlink, maxflow);
-        
-        
-        
-        double assignedFlow = 0;
-        
-        // while there is flow left to assign
-        // use flow epsilon to avoid numerical error causing infinite loop
-        while(maxflow - assignedFlow > Params.flow_epsilon){
-            
-            // DFS find path
-            unvisited.clear();
-            unvisited.push(start);
-            
-            for(Node n : network.nodes){
-                n.visited = false;
-                n.pred2 = null;
-            }
-            
-            start.visited = true;
-            
-            while(!unvisited.isEmpty()){
-                Node i = unvisited.pop();
-                
-
-                // once DFS finds a path, stop and add flow. That path will become unusable
-                if(i == end){
-                    break;
-                }
-                
-                ArrayList<Link> expanded = new ArrayList<>();
-                for(Link ij : i.getOutgoing()){
-                    // only expand links with positive bush flow - temporary branch flow
-                    if(branchlinks.contains(ij) && !ij.getDest().visited && getFlow(ij) - branchflows.get(ij) > Params.flow_epsilon){
-                        expanded.add(ij);
-                    }
-                }
-                
-                // sort in order of decreasing flow
-                Collections.sort(expanded, new Comparator<Link>(){
-                    public int compare(Link i, Link j){
-                        double flowi = getFlow(i) - branchflows.get(i);
-                        double flowj = getFlow(j) - branchflows.get(j);
-                        return (int)Math.ceil(flowj - flowi);
-                    }
-                });
-                
-                for(Link ij : expanded){
-                    Node j = ij.getDest();
-                    j.pred2 = ij;
-                    j.visited = true;
-                    unvisited.push(j);
-                }
-            }
-            
-            // trace path and label flows
-            Path augmentedPath = tracePath2(start, end);
-            
-            
-            double sendFlow = maxflow;
-            
-            for(Link l : augmentedPath){
-                sendFlow = Math.min(sendFlow, getFlow(l) - branchflows.get(l));
-            }
-            
-            for(Link l : augmentedPath){
-                branchflows.put(l, branchflows.get(l) + sendFlow);
-            }
-            
-       
-            assignedFlow += sendFlow;
-        }
-
-        
-        // max flow shifted off branch is the flow on the last link
-        
-
-        
-        
-        
-        
-        
-        
-        return output;
-    }
     
-    */
+
     
-    public Path tracePath(Node j){
-        return tracePath(origin, j);
-    }
+    def tracePath(self, i, j):
+        output = []
+        
+        curr = j;
+        
+        while curr != i:
+
+            output.add(curr.pred)
+            curr = curr.pred.getSource()
+        
+        return output
     
-    public Path tracePath(Node i, Node j){
+    def tracePath2(self, i, j):
+        output = []
         
+        curr = j;
+        
+        while curr != i:
 
-        Path output = new Path(true);
+            output.add(curr.pred)
+            curr = curr.pred2.getSource()
         
-        Node curr = j;
-        
-        while(curr != i){
-
-            output.add(curr.pred);
-            curr = curr.pred.getSource();
-        }
-        
-        return output;
-    }
+        return output
     
-    public Path tracePath2(Node i, Node j){
+    def tracePathSet(self, i, j):
+        output = set()
         
+        curr = j;
+        
+        while curr != i:
 
-        Path output = new Path(true);
+            output.add(curr.pred)
+            curr = curr.pred.getSource()
         
-        Node curr = j;
-        
-        while(curr != i){
-
-            output.add(curr.pred2);
-            curr = curr.pred2.getSource();
-        }
-        
-        return output;
-    }
+        return output
     
-    
-    public Set<Link> tracePathSet(Node i, Node j){
-        
-
-        Set<Link> output = new HashSet<>();
-        
-        Node curr = j;
-        
-        while(curr != i){
-
-            output.add(curr.pred);
-            curr = curr.pred.getSource();
-        }
-        
-        return output;
-    }
+   
     
     public Tree minPath()
     {
@@ -475,27 +336,16 @@ class Bush:
         
     }
     
-    public void branchShifts(){
+    def branchShifts(self):
         
         
-        for(Branch b : branches){
-            b.init();
-            //System.out.println(b);
-            b.flowShift();
+        for b in self.branches):
+            b.init()
+            b.flowShift()
             
-            
-            /*
-            boolean output = validateFlowConservation();
-            if(!output){
-                System.out.println("\n\n\n****flow conservation failed*****\n\n");
-                System.exit(0);
-                return;
-            }
-            */
-        }
         
-        branches.clear();
-    }
+        branches = []
+    
     
     public boolean hasRelevantPAS(Link a){
         if(!relevantPAS.containsKey(a)){
@@ -607,103 +457,6 @@ class Bush:
         return relevantPAS;
     }
     
-    /*
-    public void removeCycles(){
-        
-        double[] newflow = new double[flow.length];
-        
-        double[] storedDem = new double[origin.demand.length];
-        
-        boolean foundDest = false;
-        do{
-            Stack<Node> unvisited = new Stack<>();
-            
-            foundDest = false;
-            
-            for(Node n : network.nodes){
-                n.visited = false;
-                n.pred2 = null;
-            }
-            
-            unvisited.add(origin);
-            
-            while(!unvisited.isEmpty()){
-                Node i = unvisited.pop();
-                
-                if((i instanceof Dest)){
-                    // load demand onto new flow graph
-                    
-                    
-                    double max = origin.demand[i.getIdx()] - storedDem[i.getIdx()];
-
-                    if(max > 0){
-                        List<Link> simplePath = new ArrayList<Link>();
-                        Node curr = i;
-                        
-                        while(curr != origin){
-    
-                            max = Math.min(max, getFlow(curr.pred2));
-                            simplePath.add(curr.pred2);
-                            curr = curr.pred2.getSource();
-                        }
-                        
-                        
-                        // now transfer flow
-                        for(Link l : simplePath){
-                            newflow[l.getIdx()] += max;
-                            addFlow(l, -max);
-                        }
-                        storedDem[i.getIdx()] += max;
-                        foundDest = true;
-                    }
-                    
-                    
-                }
-                
-                if(!i.visited){
-                    
-                    i.visited = true;
-
-                    for(Link ij : i.getOutgoing()){
-                        if(contains(ij)){
-                            Node j = ij.getDest();
-                            if(j.pred2 == null){
-                                j.pred2 = ij;
-                                unvisited.push(j);
-                            }
-                            
-                        }
-                    }
-                }
-            }
-            
-
-        }
-        while(foundDest);
-        
-        setFlow(newflow);
-        
-        
-        topologicalSort();
-    }
-    */
-    
-    public void setFlow(double[] newflow){
-        assert(newflow.length == flow.length);
-        
-        
-        
-        
-        
-        for(Link l : network.links){
-            int i = l.getIdx();
-            l.addX(newflow[i] - flow[i]);
-            //contains[i] = newflow[i] > Params.flow_epsilon;
-        }
-        
-        flow = newflow;
-    }
-    
     public void removeCycles(){
         
         // right now this restarts the entire loop when a cycle is detected. I think we don't need to restart everything...
@@ -790,12 +543,6 @@ class Bush:
     // n is the root node of the cycle
     private void removeCycle(Node n){
         
-        /*
-        System.out.println("Remove cycle "+n);
-        for(Node i : network.nodes){
-            System.out.println("\t"+i+" "+i.visited+" "+i.pred2 +" "+getFlow(i.pred2));
-        }
-        */
         
         List<Link> list = new ArrayList<>();
         
@@ -1269,48 +1016,31 @@ class Bush:
     
     
     
-    public boolean validateDemand(){
+    def validateDemand():
 
-        for(Node s : sorted){
-            if(s != origin && (s instanceof Dest)){
-                double d = origin.getDemand((Dest)s);
+        for s in sorted):
+            if s != origin and (s instanceof Dest)):
+                d = origin.getDemand(s)
                 
-                double actual = 0;
+                actual = 0
                 
-                for(Link id : s.getIncoming()){
-                    actual += flow[id.getIdx()];
-                }
+                for id in s.getIncoming():
+                    actual += flow[id]
                 
-                for(Link dj : s.getOutgoing()){
-                    actual -= flow[dj.getIdx()];
-                }
                 
-                if(Math.abs(d - actual) > Params.flow_epsilon){
-                    throw new RuntimeException("Origin "+origin+": demand to "+s+" is "+d+" but flow is "+actual);
-                    //return false;
-                }
-            }
-        }
-        
-        return true;
-    }
+                for dj in s.getOutgoing():
+                    actual -= flow[dj]
+                
+                
+                if abs(d - actual) > Params.flow_epsilon:
+                    print("Origin "+str(origin)+": demand to "+str(s)+" is "+str(d)+" but flow is "+str(actual))
+                    return False;
+        return True
     
-    public boolean addFlow(Link l, double x)
-    {
-
-        if((""+x).equals("NaN"))
-        {
-            throw new RuntimeException("flow="+x);
-        }
-        l.addX(x);
-        
-        int idx = l.getIdx();
-        flow[idx] += x;
-        
-        //contains[l.getIdx()] = flow[l.getIdx()] > Params.flow_epsilon;
-        
-        return contains(idx);
-    }
+    
+    def addFlow(self, l, x):
+        l.x += x
+        flow[l] += x;
     
     // maybe store this as a map<Link, list<PAS>> mapping end link of PAS
     public void addRelevantPAS(PAS p){
