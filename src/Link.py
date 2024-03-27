@@ -3,7 +3,7 @@
 class Link:
 
     # construct this Link with the given parameters
-    def __init__(self, start, end, t_ff, C, alpha, beta):
+    def __init__(self, start, end, t_ff, C, alpha, beta, cost):
         self.start = start
         self.end = end
         self.t_ff = t_ff
@@ -11,10 +11,15 @@ class Link:
         self.alpha = alpha
         self.beta = beta
         self.x = 0
+        self.cost = cost # for DNDP
         
         if start is not None:
             start.addOutgoingLink(self)
         self.xstar = 0
+        self.lbdcost = 0
+        
+    def setlbdCost(self, lbdcost):
+        self.lbdcost = lbdcost
 
     # updates the flow to the given value
     def setFlow(self, x):
@@ -23,15 +28,18 @@ class Link:
     def __repr__(self):
         return str(self)
         
-    # **********
-    # Exercise 1
-    # **********    
-    def getTravelTime(self):
-        return self.t_ff * (1 + self.alpha * pow(self.x / self.C, self.beta))
+
+    def getTravelTime(self, x, type):
+        output = self.t_ff * (1 + self.alpha * pow(self.x / self.C, self.beta))
         
-    # **********
-    # Exercise 2(a)
-    # **********
+        if type == 'SO':
+            output += self.t_ff * self.alpha * self.beta * pow(self.x / self.C, self.beta-1) / self.C
+        
+        if type != 'TT':
+            output += self.lbdcost
+        return output
+        
+
     def getCapacity(self):
         return self.C
     

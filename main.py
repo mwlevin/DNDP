@@ -1,13 +1,42 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Mar 27 18:46:55 2024
+
+@author: david
+"""
+
+#---modules
+from src import Network
+import networkx as nx
+
+#net = 'SF'
+#ins = 'DNDP_10_1'
+#data = inout.read_instance(net,ins,0.5,500,1e-0,1e-3,600)
+
+network = Network.Network("SiouxFalls",0.5,500,1e-0,1e-3,600)
+
+#print(net,ins)
+#print()
 
 
-from src import Exercise1
-from src import Exercise2
-from src import Exercise3
-from src import Exercise4
-from src import Exercise5
-from src import Exercise6
-from src import Exercise7
-from src import Exercise8
 
-if __name__ == '__main__':
-    Exercise1.test()
+y1 = {(i,j):1 for (i,j) in network.links2}
+l0 = {(i,j):0 for (i,j) in network.links2}
+
+#---initialize link flows in the network (0 is default)
+x0 = {(i,j):0 for (i,j) in network.links2}
+
+#---arbitrary (nonzero) lambda
+lbd = {(i,j):1 for (i,j) in network.links2}
+
+#---solve UE with lambda=0 
+Lx, x, tstt = network.msa('UE',l0,y1,x0)
+#Lx, x, tstt = test_optim.TAP(data,G,'UE','MSA',l0,y1,x0)
+print('Lx: %.1f' % Lx)
+print('tstt: %.1f' % tstt)
+
+#---solve SO with lambda=lbd
+Lx, x, tstt = network.msa('SO',lbd,y1,x0)
+#Lx, x, tstt = test_optim.TAP(data,G,'SO','MSA',lbd,y1,x0)
+print('Lx: %.1f' % Lx)
+print('tstt: %.1f' % tstt)

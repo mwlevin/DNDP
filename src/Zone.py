@@ -3,17 +3,14 @@ from src import Node
 
 class Zone(Node.Node):
 
-    # **********
-    # Exercise 4(a)
-    # ********** 
+
     def __init__(self, id):
         super().__init__(id)
         self.demand = {}
         self.thruNode = True
+        self.bush = None
     
-    # **********
-    # Exercise 4(b)
-    # ********** 
+
     # adds the specified demand to an internal data structure for the demand from this node to the destination
     def addDemand(self, dest, dem):
         if dest in self.demand.keys():
@@ -28,9 +25,7 @@ class Zone(Node.Node):
         else:
             return 0
     
-    # **********
-    # Exercise 4(c)
-    # ********** 
+
     # returns the total number of outgoing trips from this node
     def getProductions(self):
     
@@ -40,10 +35,7 @@ class Zone(Node.Node):
             total += self.demand[s]
         
         return total
-    
-    # **********
-    # Exercise 4(d)
-    # ********** 
+
     # returns aboolean indicating whether this node is a thru node
     def isThruNode(self):
         return self.thruNode

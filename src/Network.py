@@ -7,31 +7,41 @@ from src import Zone
 class Network:
 
     # construct this Network with the name; read files associated with network name
-    def __init__(self, name):
+    def __init__(self, name,B_prop,m,scal_time,scal_flow,timelimit):
         self.nodes = [] 
         self.links = []
         self.zones = []
-        self.readNetwork("data/"+name+"/net.txt")
-        self.readTrips("data/"+name+"/trips.txt")
+        
+        self.links2 = {}
+        self.type = 'UE'
+        self.TD = 0
+        self.TC = 0 # total cost
+        
+        
+        self.inf = 1e+9
+        self.tol = 1e-2
+        
+        self.readNetwork("data/"+name+"/net.txt",m,scal_time,scal_flow,timelimit)
+        self.readTrips("data/"+name+"/trips.txt",m,scal_time,scal_flow,timelimit)
+        
+        self.B = self.TC * B_prop # budget
+        
+        
+        print('Total scaled demand',self.TD)
+        print('Total cost',self.TC,'Budget',self.B)
+        
+    def setType(self, type):
+        self.type = type
         
     # read file "/net.txt"
-    def readNetwork(self, netFile):
-        # **********
-        # Exercise 5(b)
-        # ********** 
-        
-        # **********
-        # Exercise 5(c)
-        # ********** 
-        
-        # **********
-        # Exercise 5(d)
-        # ********** 
+    def readNetwork(self, netFile,m,scal_time,scal_flow,timelimit):
+
         
         firstThruNode = 1
         numZones = 0
         numNodes = 0
         numLinks = 0
+        newLinks = 0
         
         file = open(netFile, "r")
 
@@ -48,6 +58,8 @@ class Network:
                 numNodes = int(line[line.index('>') + 1:].strip())
             elif "<NUMBER OF LINKS>" in line:
                 numLinks = int(line[line.index('>') + 1:].strip())
+            elif "<NUMBER OF NEW LINKS>" in line:
+                newLinks = int(line[line.index('>') + 1:].strip())
             elif "<FIRST THRU NODE>" in line:
                 firstThruNode = int(line[line.index('>') + 1:].strip())
 
@@ -68,22 +80,32 @@ class Network:
         while len(line) == 0:
             line = file.readline().strip()
         
-        for i in range(0, numLinks):
+        for i in range(0, numLinks + newLinks):
             line = file.readline().split()
             
             start = self.nodes[int(line[0]) - 1]
             end = self.nodes[int(line[1]) - 1]
-            C = float(line[2])
+            C = float(line[2]) * scal_flow
 
-            t_ff = float(line[4])
+            t_ff = float(line[4]) * scal_time
             alpha = float(line[5])
             beta = float(line[6])
             
-            self.links.append(Link.Link(start, end, t_ff, C, alpha, beta))
+            cost = float(line[10])
+            
+            
+            
+            self.TC += cost
+            
+            link = Link.Link(start, end, t_ff, C, alpha, beta, cost)
+            self.links.append(link)
+            
+            if i > numLinks:
+                self.links2[(start, end)] = link
             
         file.close()
         
-    def readTrips(self, tripsFile):
+    def readTrips(self, tripsFile,m,scal_time,scal_flow,timelimit):
 
         # **********
         # Exercise 5(d)
@@ -119,9 +141,10 @@ class Network:
                 s = self.zones[int(splitted[idx]) - 1]
                 idx += 2
                 next = splitted[idx]
-                d = float(next[0:len(next) - 1])
+                d = float(next[0:len(next) - 1]) * scal_flow
                 
                 r.addDemand(s, d)
+                self.TD += d
                 
             idx += 1
             if idx >= len(splitted):
@@ -202,8 +225,9 @@ class Network:
             for uv in u.getOutgoing():
                 v = uv.getEnd()
 
-                if u.cost + uv.getTravelTime() < v.cost:
-                    v.cost = u.cost + uv.getTravelTime()
+                tt = uv.getTravelTime(uv.x, self.type)
+                if u.cost + tt < v.cost:
+                    v.cost = u.cost + tt
                     v.predecessor = u
 
                     if v.isThruNode():
@@ -235,7 +259,7 @@ class Network:
     def getTSTT(self):
         output = 0.0
         for ij in self.links:
-            output += ij.getFlow() * ij.getTravelTime()
+            output += ij.x * ij.getTravelTime(ij.x, self.type)
         return output
 
     # returns the total system travel time if all demand is on the shortest path
@@ -297,9 +321,22 @@ class Network:
     # **********
     # Exercise 8(d)
     # ********** 
-    def msa(self, max_iteration):
+    def msa(self, type, lbd, y, xinit):
 
+        self.setType(type)
+        max_iteration = 1000
+        
+        for ij in self.links:
+            i = ij.start
+            j = ij.end
+            if (i,j) in y:            
+                ij.setlbdCost(lbd[(i,j)]*y[(i,j)] + self.inf*(1 - y[(i,j)]))
+        
+        
         output = "Iteration\tAEC\n"
+        
+        
+        
 
         for iteration in range(1, max_iteration + 1):
             self.calculateAON()
@@ -309,5 +346,21 @@ class Network:
             
             output += str(iteration) + "\t" + str(self.getAEC()) + "\n"
         
-        return output
+        return self.getLx(lbd, y), self.getXDict(), self.getTSTT()
 
+    def getLx(self, lbd, y):
+        Lx = 0
+        for ij in self.links:
+            Lx += ij.x * ij.getTravelTime(ij.x, 'TT')
+            i = ij.start
+            j = ij.end
+            if (i,j) in y:
+                Lx += lbd[(i,j)]*ij.x
+            
+        return Lx
+            
+    def getXDict(self):
+        output = {}
+        for ij in self.links:
+            output[(ij.start, ij.end)] = ij.x
+        return output
