@@ -8,14 +8,52 @@ class Node:
         self.cost = 0.0
         self.predecessor = None
         self.id = id
-        self.outgoing = []
+        self.outgoing = set()
+        self.incoming = set()
+        
+        self.top_order = -1
+        self.visited = False
+        self.in_degree = 0
+    
+        self.cost = 0
+        # pred2 is used by bush when not finding shortest paths
+        self.pred = None
+        self.pred2 = None
         
     def __repr__(self):
         return str(self)
         
+        
+
+    
+    def getBushOutgoing(self, b):
+    
+        output = []
+        
+        for l in self.outgoing:
+            if b.contains(l):
+                output.add(l)
+        
+        return output
+    
+    def getBushIncoming(self, b):
+    
+        output = []
+        
+        for l in self.incoming:
+            if b.contains(l):
+                output.add(l)
+        
+        return output
+    
+
+        
     # returns a list of links containing the outgoing links of this node
     def getOutgoing(self):
         return self.outgoing
+        
+    def getIncoming(self):
+        return self.incoming
 
     # returns True if this node is a thru node
     def isThruNode(self):
@@ -39,4 +77,7 @@ class Node:
     # **********    
     # adds ij to list of outgoing links
     def addOutgoingLink(self, ij):
-        self.outgoing.append(ij)
+        self.outgoing.add(ij)
+    
+    def addIncomingLink(self, ij):
+        self.incoming.add(ij)

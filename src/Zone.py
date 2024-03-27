@@ -7,6 +7,7 @@ class Zone(Node.Node):
     def __init__(self, id):
         super().__init__(id)
         self.demand = {}
+        self.totaldemand = 0
         self.thruNode = True
         self.bush = None
     
@@ -14,10 +15,15 @@ class Zone(Node.Node):
     # adds the specified demand to an internal data structure for the demand from this node to the destination
     def addDemand(self, dest, dem):
         if dest in self.demand.keys():
-            self.demand[dest] = self.demand[dest] + dem
+            self.demand[dest] = self.demand[dest] + dem 
         else:
             self.demand[dest] = dem
-    
+            
+        self.totaldemand += dem
+        
+    def getTotalDemand(self):
+        return self.totaldemand
+        
     # returns the number of trips from this node to the destination
     def getDemand(self, dest):
         if dest in self.demand.keys():

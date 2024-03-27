@@ -15,6 +15,10 @@ class Link:
         
         if start is not None:
             start.addOutgoingLink(self)
+            
+        if end is not None:
+            end.addIncomingLink(self)
+            
         self.xstar = 0
         self.lbdcost = 0
         
