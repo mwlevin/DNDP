@@ -31,13 +31,13 @@ lbd = {(i,j):1 for (i,j) in network.links2}
 network.tapas('UE', l0, y1, x0)
 
 #---solve UE with lambda=0 
-Lx, x, tstt = network.msa('UE',l0,y1,x0)
+#Lx, x, tstt = network.msa('UE',l0,y1,x0)
 #Lx, x, tstt = test_optim.TAP(data,G,'UE','MSA',l0,y1,x0)
-print('Lx: %.1f' % Lx)
-print('tstt: %.1f' % tstt)
+#print('Lx: %.1f' % Lx)
+#print('tstt: %.1f' % tstt)
 
 #---solve SO with lambda=lbd
-Lx, x, tstt = network.msa('SO',lbd,y1,x0)
+#Lx, x, tstt = network.msa('SO',lbd,y1,x0)
 #Lx, x, tstt = test_optim.TAP(data,G,'SO','MSA',lbd,y1,x0)
-print('Lx: %.1f' % Lx)
-print('tstt: %.1f' % tstt)
+#print('Lx: %.1f' % Lx)
+#print('tstt: %.1f' % tstt)

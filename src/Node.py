@@ -48,11 +48,6 @@ class Node:
 
         
     # returns a list of links containing the outgoing links of this node
-    def getOutgoing(self):
-        return self.outgoing
-        
-    def getIncoming(self):
-        return self.incoming
 
     # returns True if this node is a thru node
     def isThruNode(self):

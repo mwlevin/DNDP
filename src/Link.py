@@ -60,9 +60,14 @@ class Link:
     def addXstar(self, flow):
         self.xstar += flow
         
-    # **********
-    # Exercise 8(b)
-    # **********   
+    
     def calculateNewX(self, stepsize):
         self.x = (1 - stepsize) * self.x + stepsize * self.xstar
         self.xstar = 0
+        
+    def hasHighReducedCost(self, type, percent):
+        reducedCost = self.end.cost - self.start.cost
+        tt = self.getTravelTime(self.x, type)
+        
+        return tt - reducedCost > tt*percent
+ 

@@ -4,6 +4,7 @@ from src import Path
 from src import Zone
 from src import Bush
 from src import Params
+from src import PASList
 
 class Network:
 
@@ -18,6 +19,8 @@ class Network:
         self.TD = 0
         self.TC = 0 # total cost
         self.params = Params.Params()
+        
+        self.allPAS = PASList.PASList()
         
         
         self.inf = 1e+9
@@ -213,16 +216,14 @@ class Network:
 
         Q = {origin}
 
-        # **********
-        # Exercise 6(c)
-        # ********** 
+  
         
         while len(Q) > 0:
 
             u = self.argmin(Q)
             Q.remove(u)
 
-            for uv in u.getOutgoing():
+            for uv in u.outgoing:
                 v = uv.end
 
                 tt = uv.getTravelTime(uv.x, self.type)
@@ -234,9 +235,7 @@ class Network:
                         Q.add(v)
             
   
-    # **********
-    # Exercise 6(d)
-    # ********** 
+
 
     def trace(self, r, s):
         curr = s
@@ -251,10 +250,33 @@ class Network:
                 curr = curr.pred.start
               
         return output
+        
+    def traceTree(self, tree, r, s):
+        curr = s
 
-    # **********
-    # Exercise 7
-    # ********** 
+        output = []
+        
+        while curr != r and curr is not None:
+            ij = tree[curr]
+
+            if ij is not None:
+                output.append(ij)
+                curr = ij.start
+              
+        return output
+
+    def getSPTree(self, r):
+        self.dijkstras(r)
+        
+        output = {}
+        
+        for n in self.nodes:
+            if n != r and n.cost < self.params.INFTY:
+                output[n] = n.pred
+
+        
+        return output
+    
     # returns the total system travel time
     def getTSTT(self):
         output = 0.0
@@ -289,24 +311,18 @@ class Network:
     def getAEC(self):
         return (self.getTSTT() - self.getSPTT()) / self.getTotalTrips()
 
-    # **********
-    # Exercise 8(a)
-    # ********** 
+
     # find the step size for the given iteration number
     def calculateStepsize(self, iteration):
         return 1.0 / iteration
 
-    # **********
-    # Exercise 8(b)
-    # ********** 
+
     # calculate the new X for all links based on the given step size
     def calculateNewX(self, stepsize):
         for ij in self.links:
             ij.calculateNewX(stepsize)
 
-    # **********
-    # Exercise 8(c)
-    # ********** 
+
     # calculate the all-or-nothing assignment
     def calculateAON(self):
         for r in self.zones:
@@ -349,8 +365,76 @@ class Network:
     def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
+        max_iter = 4
+        min_gap = 1E-4
+        
+        
         for r in self.zones:
             r.bush = Bush.Bush(self, r)
+            
+        for iter in range(1, max_iter+1):
+            # for every origin
+            for r in self.zones:
+                if r.bush is None:
+                    continue
+  
+                # remove all cyclic flows
+                r.bush.removeCycles()
+               
+                # find tree of least cost routes
+                r.bush.checkPAS()
+                # for every link used by the origin which is not part of the tree
+                    # if there is an existing effective PAS
+                        # make sure the origin is listed as relevant
+                    # else
+                        # construct a new PAS    
+                        
+                # choose a random subset of active PASs
+                # shift flow within each chosen PAS
+                    
+                r.bush.branchShifts()
+                
+                for a in r.bush.relevantPAS.forward:
+                    for p in r.bush.relevantPAS.forward[a]:
+                        p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap)
+            
+            # for every active PAS
+            
+            modified = False
+            for shiftIter in range(0, self.params.tapas_equilibrate_iter):
+                # check if it should be eliminated
+                self.removePAS()
+                # perform flow shift to equilibrate costs
+                modified = self.equilibratePAS()
+                # redistribute flows between origins by the proportionality condition
+                
+                # in the case that no flow shifting occurred, do not try to equilibrate more
+                if not modified:
+                    break
+
+                
+            tstt = self.getTSTT()
+            sptt = self.getSPTT()
+            gap = (tstt - sptt)/tstt
+            aec = (tstt - sptt)/self.TD
+            
+            print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+            
+            #printLinkFlows();
+            
+            if gap < min_gap:
+                break
+            
+            
+            # there's an issue where PAS are labeled as not cost effective because the difference in cost is small, less than 5% of the reduced cost
+            # for low network gaps, this is causing PAS to not flow shift
+            # when the gap is low, increase the flow shift sensitivity
+            if gap < self.params.pas_cost_mu:
+                self.params.pas_cost_mu /= 10;
+                self.params.line_search_gap /= 10;
+                
+                if self.params.PRINT_PAS_INFO:
+                    print("Adjusting parameters due to small gap");
 
     def getLx(self, lbd, y):
         Lx = 0
@@ -368,3 +452,37 @@ class Network:
         for ij in self.links:
             output[(ij.start, ij.end)] = ij.x
         return output
+        
+    def findPAS(self, ij, bush):
+        
+        if not self.allPAS.containsKey(ij):
+            return None
+        
+        best = None
+        max = self.params.bush_gap
+        
+        if ij in self.allPAS.forward:
+            for p in self.allPAS.forward[ij]:
+                temp = p.maxBackwardBushFlowShift(bush)
+
+                if temp > max and p.isCostEffective(ij, self.params.pas_cost_mu):
+                    max = temp
+                    best = p
+                
+        if ij in self.allPAS.backward:
+            for p in self.allPAS.backward[ij]:
+                temp = p.maxForwardBushFlowShift(bush)
+
+                if temp > max and p.isCostEffectiveForLink(ij, self.type, self.params.pas_cost_mu):
+                    max = temp
+                    best = p
+        
+        return best
+        
+        
+    def removePAS(self):
+        pass
+        
+        
+    def equilibratePAS(self):
+        pass

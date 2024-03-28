@@ -2,9 +2,7 @@
 # Author     : michaellevin
 
 class Params:
-
-
-    
+ 
     def __init__(self):
         self.bush_gap = 0.001
         self.pas_cost_mu = 0.05
