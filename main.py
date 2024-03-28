@@ -12,8 +12,8 @@ from src import Network
 #ins = 'DNDP_10_1'
 #data = inout.read_instance(net,ins,0.5,500,1e-0,1e-3,600)
 
-network = Network.Network("SiouxFalls",0.5,500,1e-0,1e-3,600)
-#network = Network.Network("grid3",1,1,1,1,1)
+#network = Network.Network("SiouxFalls",0.5,500,1e-0,1e-3,600)
+network = Network.Network("grid3",1,1,1,1,1)
 #print(net,ins)
 #print()
 

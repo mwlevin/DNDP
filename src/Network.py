@@ -434,8 +434,8 @@ class Network:
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if gap < self.params.pas_cost_mu:
-                self.params.pas_cost_mu /= 10;
-                self.params.line_search_gap /= 10;
+                self.params.pas_cost_mu /= 10
+                self.params.line_search_gap /= 10
                 
                 if self.params.PRINT_TAPAS_INFO:
                     print("Adjusting parameters due to small gap");

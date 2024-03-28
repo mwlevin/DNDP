@@ -3,7 +3,9 @@
 
 from src import Params
 from src import PASList
-from collections import deque
+from src import Branch
+import llist
+from llist import sllist
 from src import PAS
 from src import NodeReturn
 from src import Node
@@ -62,7 +64,7 @@ class Bush:
             n.top_order = -1
         
         
-        queue = deque()
+        queue = sllist()
         queue.append(self.origin)
         self.origin.visited = True
         
@@ -340,8 +342,13 @@ class Bush:
 
     
 
-    def createBranch(self, l):
-        return None
+    def createBranch(self, endlink):
+        minpath = self.tracePathSet(self.origin, endlink.end)
+        
+        output = Branch.Branch(self, endlink, minpath)
+        
+        return output
+   
     
     def hasRelevantPAS(self, a):
         if a in self.relevantPAS.forward:
@@ -474,14 +481,14 @@ class Bush:
         # store trace to avoid repeating breadth first search
         trace = {}
         
-        unvisited = deque()
+        unvisited = sllist()
         
         unvisited.append(a)
         
         firstSimilar = None
         
         while len(unvisited) > 0:
-            jk = unvisited.popleft()
+            jk = unvisited.pop()
             #print("consider "+str(jk)+" "+str(unvisited))
             j = jk.start
             
