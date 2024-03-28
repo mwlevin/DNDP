@@ -89,13 +89,13 @@ class Branch:
                         expanded.add(ij)
                 
                 # sort in order of decreasing flow
-                Collections.sort(expanded, new Comparator<Link>(){
-                    public int compare(Link i, Link j){
-                        double flowi = bush.getFlow(i) - linkflows.get(i);
-                        double flowj = bush.getFlow(j) - linkflows.get(j);
-                        return (int)Math.ceil(flowj - flowi);
-                    }
-                });
+                expanded.sort(key = lambda x: bush.flow[x] - linkflows[x])
+                
+                #Collections.sort(expanded, new Comparator<Link>(){
+                #    public int compare(Link i, Link j){
+                #        double flowi = bush.getFlow(i) - linkflows.get(i);
+                #        double flowj = bush.getFlow(j) - linkflows.get(j);
+                #        return (int)Math.ceil(flowj - flowi);
                 
                 for ij in expanded:
                     j = ij.end
@@ -120,7 +120,7 @@ class Branch:
      
      
            
-    def flowShift(self):
+    def flowShift(self, type):
         avgTT = self.getAvgTT(0)
         minTT = self.getMinTT(0)
         
@@ -136,14 +136,14 @@ class Branch:
         while top - bot > self.bush.network.params.line_search_gap:
             mid = (bot+top)/2
             
-            newTTDiff = getAvgTT(mid) - getMinTT(mid)
+            newTTDiff = getAvgTT(mid, type) - getMinTT(mid, type)
             
             #System.out.println(bot+" "+mid+" "+top+" "+getAvgTT(mid)+" "+getMinTT(mid)+" "+newTTDiff);
             
             if newTTDiff > 0:
                 # shift more
                 bot = mid
-            else
+            else:
                 # shift less
                 top = mid
         
@@ -155,79 +155,64 @@ class Branch:
         return bot
 
     
-    public double getMinTT(double shift){
-        double output = 0;
+    def getMinTT(self, shift, type):
+        output = 0
         
-        // this is used in case the min links are also on the branch
-        double prop = shift/maxflow;
+        # this is used in case the min links are also on the branch
+        prop = shift/self.maxflow
         
-        for(Link l : minpath){
-            double newflow = l.getFlow();
+        for l in minpath:
+            newflow = l.x
             
-            // add flow to the minpath
-            newflow += shift;
+            # add flow to the minpath
+            newflow += shift
             
-            // if link is in branch, some flow will be shifted:
-            if(linkflows.containsKey(l)){
-                newflow -= prop * linkflows.get(l);
-            }
+            # if link is in branch, some flow will be shifted:
+            if l in linkflows:
+                newflow -= prop * linkflows[l]
             
-            output += l.getTT(newflow);
-        }
+            output += l.getTravelTime(newflow, type)
         
-        return output;
+        return output
         
-    }
+    # consider shifting flow from branch to minpath
+    def getAvgTT(shift, type):
+        output = 0
+        
+        # proportional shift based on how much of the branch flow is on each link
+        prop = shift/self.maxflow
+  
+        for l in linkflows:
+            
+            # subtract the flowshift
+            flowchange = linkflows[l]*prop
+            newflow = l.x - flowchange
+            
+            # if link is on minpath, then add the entire shift to it
+            
+            if l in minpath:
+                newflow += shift
+
+            output += (linkflows[l] - flowchange) * l.getTravelTime(newflow, type)
+        
+        return output / (self.maxflow - shift)
     
+    def propAddFlow(self, shift):
+        prop = shift/self.maxflow
+        
+        for l in linkflows:
+            bush.addFlow(l, -linkflows[l]*prop)
+            
+            # this isn't needed: the branch will be discarded after equilibrating.
+            if self.bush.network.params.DEBUG_CHECKS:
+                linkflows[l] = linkflows[l] * (1-prop)
+
+        for l in self.minpath:
+            bush.addFlow(l, shift)
+            
+            # this isn't needed: the branch will be discarded after equilibrating.
+            if self.bush.network.params.DEBUG_CHECKS:
+                linkflows[l] = linkflows[l] + shift
+
+        self.maxflow -= shift
     
-    // consider shifting flow from branch to minpath
-    public double getAvgTT(double shift){
-        double output = 0;
-        
-        // proportional shift based on how much of the branch flow is on each link
-        double prop = shift/maxflow;
-
-        
-        for(Link l : linkflows.keySet()){
-            
-            // subtract the flowshift
-            double flowchange = linkflows.get(l)*prop;
-            double newflow = l.getFlow() - flowchange;
-            
-            // if link is on minpath, then add the entire shift to it
-            
-            if(minpath.contains(l)){
-                newflow += shift;
-            }
-
-
-            output += (linkflows.get(l) - flowchange) * l.getTT(newflow);
-        }
-        
-        return output / (maxflow - shift);
-    }
-    
-    public void propAddFlow(double shift){
-        double prop = shift/maxflow;
-
-        
-        for(Link l : linkflows.keySet()){
-            bush.addFlow(l, -linkflows.get(l)*prop);
-            
-            // this isn't needed: the branch will be discarded after equilibrating.
-            if(Params.DEBUG_CHECKS){
-                linkflows.put(l, linkflows.get(l) * (1-prop));
-            }
-        }
-        
-        for(Link l : minpath){
-            bush.addFlow(l, shift);
-            
-            // this isn't needed: the branch will be discarded after equilibrating.
-            if(Params.DEBUG_CHECKS){
-                linkflows.put(l, linkflows.get(l) + shift);
-            }
-        }
-        
-        maxflow -= shift;
-    }
