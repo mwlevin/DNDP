@@ -7,7 +7,6 @@ Created on Wed Mar 27 18:46:55 2024
 
 #---modules
 from src import Network
-import networkx as nx
 
 #net = 'SF'
 #ins = 'DNDP_10_1'
@@ -28,6 +27,8 @@ x0 = {(i,j):0 for (i,j) in network.links2}
 
 #---arbitrary (nonzero) lambda
 lbd = {(i,j):1 for (i,j) in network.links2}
+
+network.tapas('UE', l0, y1, x0)
 
 #---solve UE with lambda=0 
 Lx, x, tstt = network.msa('UE',l0,y1,x0)

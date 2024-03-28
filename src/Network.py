@@ -2,7 +2,8 @@ from src import Node
 from src import Link
 from src import Path
 from src import Zone
-
+from src import Bush
+from src import Params
 
 class Network:
 
@@ -16,6 +17,7 @@ class Network:
         self.type = 'UE'
         self.TD = 0
         self.TC = 0 # total cost
+        self.params = Params.Params()
         
         
         self.inf = 1e+9
@@ -201,13 +203,11 @@ class Network:
         return best
 
     def dijkstras(self, origin):
-        # **********
-        # Exercise 6(b)
-        # ********** 
 
+        
         for n in self.nodes:
-            n.cost = float("inf")
-            n.predecessor = None
+            n.cost = self.params.INFTY
+            n.pred = None
 
         origin.cost = 0.0
 
@@ -223,12 +223,12 @@ class Network:
             Q.remove(u)
 
             for uv in u.getOutgoing():
-                v = uv.getEnd()
+                v = uv.end
 
                 tt = uv.getTravelTime(uv.x, self.type)
                 if u.cost + tt < v.cost:
                     v.cost = u.cost + tt
-                    v.predecessor = u
+                    v.pred = uv
 
                     if v.isThruNode():
                         Q.add(v)
@@ -243,12 +243,12 @@ class Network:
 
         output = Path.Path()
         
-        while curr.getId() != r.getId() and curr is not None:
-            ij = self.findLink(curr.predecessor, curr)
+        while curr != r and curr is not None:
+            ij = curr.pred
 
             if ij is not None:
                 output.addFront(ij)
-                curr = curr.predecessor
+                curr = curr.pred.start
               
         return output
 
@@ -318,9 +318,7 @@ class Network:
                         pi_star = self.trace(r, s)
                         pi_star.addHstar(r.getDemand(s))
 
-    # **********
-    # Exercise 8(d)
-    # ********** 
+
     def msa(self, type, lbd, y, xinit):
 
         self.setType(type)
@@ -347,6 +345,12 @@ class Network:
             output += str(iteration) + "\t" + str(self.getAEC()) + "\n"
         
         return self.getLx(lbd, y), self.getXDict(), self.getTSTT()
+        
+    def tapas(self, type, lbd, y, xinit):
+        self.setType(type)
+        
+        for r in self.zones:
+            r.bush = Bush.Bush(self, r)
 
     def getLx(self, lbd, y):
         Lx = 0

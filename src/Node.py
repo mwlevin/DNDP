@@ -6,7 +6,6 @@ class Node:
     def __init__(self, id):
         # used for Dijkstra's implementation
         self.cost = 0.0
-        self.predecessor = None
         self.id = id
         self.outgoing = set()
         self.incoming = set()
@@ -32,7 +31,7 @@ class Node:
         
         for l in self.outgoing:
             if b.contains(l):
-                output.add(l)
+                output.append(l)
         
         return output
     
@@ -42,7 +41,7 @@ class Node:
         
         for l in self.incoming:
             if b.contains(l):
-                output.add(l)
+                output.append(l)
         
         return output
     

@@ -50,24 +50,13 @@ class Link:
     def getFlow(self):
         return self.x
         
-    # **********
-    # Exercise 3(a)
-    # **********  
-    def getStart(self):
-        return self.start
-    
-    def getEnd(self):
-        return self.end
+
         
-    # **********
-    # Exercise 3(c)
-    # **********   
+
     def __str__(self):
         return "(" + str(self.start.getId()) + ", " + str(self.end.getId()) + ")"
         
-    # **********
-    # Exercise 8(a)
-    # **********   
+
     def addXstar(self, flow):
         self.xstar += flow
         
