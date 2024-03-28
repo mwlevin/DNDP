@@ -5,6 +5,7 @@ from src import Zone
 from src import Bush
 from src import Params
 from src import PASList
+import math
 
 class Network:
 
@@ -365,23 +366,26 @@ class Network:
     def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        max_iter = 4
+        max_iter = 6
         min_gap = 1E-4
+        
+        self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
         
         for r in self.zones:
             r.bush = Bush.Bush(self, r)
             
         for iter in range(1, max_iter+1):
+  
             # for every origin
             for r in self.zones:
                 if r.bush is None:
                     continue
   
-                # remove all cyclic flows
+                # remove all cyclic flows and topological sort
                 r.bush.removeCycles()
-               
                 # find tree of least cost routes
+                
                 r.bush.checkPAS()
                 # for every link used by the origin which is not part of the tree
                     # if there is an existing effective PAS
@@ -403,9 +407,9 @@ class Network:
             modified = False
             for shiftIter in range(0, self.params.tapas_equilibrate_iter):
                 # check if it should be eliminated
-                self.removePAS()
+                self.removePAS(iter)
                 # perform flow shift to equilibrate costs
-                modified = self.equilibratePAS()
+                modified = self.equilibratePAS(iter)
                 # redistribute flows between origins by the proportionality condition
                 
                 # in the case that no flow shifting occurred, do not try to equilibrate more
@@ -433,7 +437,7 @@ class Network:
                 self.params.pas_cost_mu /= 10;
                 self.params.line_search_gap /= 10;
                 
-                if self.params.PRINT_PAS_INFO:
+                if self.params.PRINT_TAPAS_INFO:
                     print("Adjusting parameters due to small gap");
 
     def getLx(self, lbd, y):
@@ -480,9 +484,34 @@ class Network:
         return best
         
         
-    def removePAS(self):
-        pass
+        
+    def equilibratePAS(self, iter):
+        output = False
+        
+
+        for a in self.allPAS.forward:
+            for p in self.allPAS.forward[a]:
+
+                if p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap):
+                    output = True
+                    p.lastIterFlowShift = iter
+
+        return output
         
         
-    def equilibratePAS(self):
-        pass
+    def removeAPAS(self, p):
+        self.allPAS.remove(p)
+            
+        for r in p.relevant:
+            r.bush.relevantPAS.remove(p)
+    
+    def removePAS(self, iter):
+        removed = []
+        
+        for a in self.allPAS.forward:
+            for p in self.allPAS.forward[a]:
+                if p.lastIterFlowShift < iter-2:
+                    removed.append(p)
+        
+        for p in removed:
+            self.removeAPAS(p)

@@ -24,6 +24,7 @@ class PAS:
     def getTT(self, topshift, type):
         output = 0
         
+ 
         for l in self.forwardlinks:
             output += l.getTravelTime(l.x + topshift, type)
             
@@ -165,14 +166,21 @@ class PAS:
         
         costdiff = backwardcost - forwardcost
         
-        # maybe the forward and backward costs will be reversed sometimes
-        if costdiff > cost_mu * forwardcost or -costdiff > cost_mu * backwardcost:
-            return False
         
         
         backwards = 1
         if backwardcost < forwardcost:
             backwards = -1
+            
+        #print("flow shift? " +str(costdiff)+" "+str(forwardcost)+" "+str(backwardcost)+" "+str(cost_mu)+" "+str(backwards))
+        
+        # maybe the forward and backward costs will be reversed sometimes
+        if (backwards == 1 and costdiff < cost_mu * forwardcost) or (backwards == -1 and -costdiff < cost_mu * backwardcost):
+        
+            return False
+
+        
+        
 
         
         overallMaxShift = 0
@@ -194,7 +202,7 @@ class PAS:
             return False
         
 
-        #System.out.println("max shift "+overallMaxShift+" "+backwards+" "+backwardcost+" "+forwardcost);
+        #print("max shift "+str(overallMaxShift)+" "+str(backwards)+" "+str(backwardcost)+" "+str(forwardcost))
         
         bot = 0
         top = overallMaxShift
@@ -204,7 +212,7 @@ class PAS:
             
             check = self.getTT(mid * backwards, type)
             
-            #System.out.println("\t"+bot+" "+top+" "+mid+" "+check);
+            #print("\t"+str(bot)+" "+str(top)+" "+str(mid)+" "+str(check))
             
             if check*backwards < 0:
                 bot = mid

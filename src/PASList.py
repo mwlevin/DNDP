@@ -22,4 +22,20 @@ class PASList:
         
         self.forward[ij].add(pas)
     
+    def remove(self, pas):
+        ij = pas.getEndLinkBwd()
+        
+        if ij in self.backward:
+            self.backward[ij].remove(pas)
+            
+            if len(self.backward[ij]) == 0:
+                del self.backward[ij]
+        
+        ij = pas.getEndLinkFwd()
+        
+        if ij in self.forward:
+            self.forward[ij].remove(pas)
+            
+            if len(self.forward[ij]) == 0:
+                del self.forward[ij]
     

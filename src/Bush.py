@@ -5,6 +5,8 @@ from src import Params
 from src import PASList
 from collections import deque
 from src import PAS
+from src import NodeReturn
+from src import Node
 
 class Bush:
     def __init__(self, network, origin):
@@ -136,13 +138,13 @@ class Bush:
     
     def checkReducedCosts(self):
     
-        minPath()
+        self.minPath()
         
         output = True
-        for l in network.links:
+        for l in self.network.links:
         
-            if flow[l] > Params.flow_epsilon and l.getReducedCost() < -Params.bush_gap:
-                print("Negative reduced cost origin "+str(origin.id))
+            if self.flow[l] > self.network.params.flow_epsilon and l.getReducedCost() < -self.network.params.bush_gap:
+                print("Negative reduced cost origin "+str(self.origin.id))
                 #print(str(l)+"\t"+str(flow[l])+"\t"+str(l.getSource().cost)+"\t"+str(l.getTT())+"\t"+str(l.getDest().cost) + "\t"+ str(l.getDest().cost - (l.getSource().cost + l.getTT())))
                 output = False
 
@@ -151,15 +153,15 @@ class Bush:
     
     
     def minUsedPath(self):
-        for u in network.nodes:
+        for u in self.network.nodes:
             u.cost = Params.INFTY
             u.pred = None
 
-        origin.cost = 0
+        self.origin.cost = 0
         
         for u in sorted:
             for uv in u.getOutgoing(self):
-                if flow[uv.getIdx()] < Params.flow_epsilon:
+                if self.flow[uv] < self.network.params.flow_epsilon:
                     continue    
                 
                 v = uv.getDest()
@@ -221,12 +223,12 @@ class Bush:
     
    
     
-    def minPath():
-        for u in network.nodes:
+    def minPath(self):
+        for u in self.network.nodes:
             u.cost = Params.INFTY
             u.pred = None
         
-        origin.cost = 0
+        self.origin.cost = 0
         
         
         for u in sorted:
@@ -328,7 +330,7 @@ class Bush:
                                     self.branches.append(branch)
 
                             else:
-                                for ij in newPAS.getBackwardsLinks():
+                                for ij in newPAS.backwardlinks:
                                     included.add(ij)
                         else:
                             if self.network.params.PRINT_PAS_INFO:
@@ -355,9 +357,96 @@ class Bush:
         return False
         
     def removeCycles(self):
-        return False
-    
-    
+
+        
+        # right now this restarts the entire loop when a cycle is detected. I think we don't need to restart everything...
+        cycleDetected = True
+        while cycleDetected:
+            for n in self.network.nodes:
+                n.visited = False
+                n.pred2 = None
+                n.top_order = -1
+            
+            cycleDetected = False
+            
+            sorted = list()
+            
+            idx = len(self.network.nodes)-1
+            
+            unvisited = [] # this is a stack
+            unvisited.append(self.origin)
+
+
+            while len(unvisited) > 0:
+                n = unvisited.pop()
+                
+                
+                
+                if isinstance(n, Node.Node):
+
+                    if n.top_order >= 0:
+                        continue
+                    elif n.visited:
+                        # remove the cycle
+                        
+                        #print("cycle check "+str(n)+" for origin "+str(self.origin))
+                        
+                        #for nb in self.network.nodes:
+                        #    if nb.pred2 is not None:
+                        #        print("\t"+str(nb)+" "+str(nb.pred2)+" "+str(self.flow[nb.pred2]))
+                        
+                        self.removeCycleAtNode(n)
+
+                        cycleDetected = True
+                        break
+                    else:
+                        n.visited = True
+
+                        unvisited.append(NodeReturn.NodeReturn(n))
+
+                        for l in n.outgoing:
+                            if self.contains(l):
+                                j = l.end
+                                j.pred2 = l
+                                unvisited.append(j)
+                else:
+                    node = n.node
+                    if node.top_order < 0:
+                        sorted.append(node)
+                        node.top_order = idx
+                        idx -= 1
+
+
+    def removeCycleAtNode(self, n):
+        # n is the root node of the cycle
+        
+        list = []
+        
+        curr = n
+        
+        loopbreak = True
+        while loopbreak:
+            #print("\t"+str(curr)+" "+str(curr.pred2))
+            pred = curr.pred2
+            list.append(pred)
+            
+            curr = pred.start
+            
+            loopbreak = curr != n
+            
+        
+        n.pred2 = None
+        
+        maxflow = self.network.params.INFTY
+        
+        for l in list:
+            maxflow = min(maxflow, self.flow[l])
+        
+        
+        #print("removing "+str(maxflow)+" from "+str(list))
+        for l in list:
+            self.addFlow(l, -maxflow)
+
     def getPathAsNodeSet(self, minPathTree, i, j):
         output = set()
         
@@ -379,7 +468,7 @@ class Bush:
         minPath = self.getPathAsNodeSet(minPathTree, self.origin, a.end)
         
         if self.network.params.PRINT_PAS_INFO:
-            print("minPath is "+str(minPath))
+            print("minPath is "+str(minPath)+" for "+str(a.end))
         
         
         # store trace to avoid repeating breadth first search
@@ -393,6 +482,7 @@ class Bush:
         
         while len(unvisited) > 0:
             jk = unvisited.popleft()
+            #print("consider "+str(jk)+" "+str(unvisited))
             j = jk.start
             
             if j in minPath:
@@ -400,22 +490,22 @@ class Bush:
                 break
             
             for ij in j.incoming:
-                
+                #print(str(ij.start)+" "+str(ij.end)+" "+str(self.flow[ij])+" "+str(minflow))
                 if self.flow[ij] > minflow and ij.start.top_order < j.top_order:
+                #if self.flow[ij] > minflow:
                     unvisited.append(ij)
                     trace[ij] = jk
         
         
-        if firstSimilar is None:
-            return None
+        
         
         
         if self.network.params.PRINT_PAS_INFO:
             print("firstSimilar is "+str(firstSimilar))
             print(str(trace)+" "+str(minflow)+" "+str(self.flow[a])+" "+str(firstSimilar))
         
-        
-        
+        if firstSimilar is None:
+            return None
         
 
         
@@ -433,6 +523,9 @@ class Bush:
         # trace firstSimilar to a in min path tree: this is the forward side of the PAS
         for l in self.network.traceTree(minPathTree, firstSimilar.start, a.end):
             output.forwardlinks.append(l)
+            
+        if len(output.forwardlinks) == 0:
+            return None
         
         output.start = firstSimilar.end
         output.end = a.end
@@ -445,4 +538,4 @@ class Bush:
         
         self.network.allPAS.add(output)
         
-    
+        return output

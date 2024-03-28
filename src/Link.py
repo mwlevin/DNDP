@@ -34,10 +34,10 @@ class Link:
         
 
     def getTravelTime(self, x, type):
-        output = self.t_ff * (1 + self.alpha * pow(self.x / self.C, self.beta))
+        output = self.t_ff * (1 + self.alpha * pow(x / self.C, self.beta))
         
         if type == 'SO':
-            output += self.t_ff * self.alpha * self.beta * pow(self.x / self.C, self.beta-1) / self.C
+            output += self.t_ff * self.alpha * self.beta * pow(x / self.C, self.beta-1) / self.C
         
         if type != 'TT':
             output += self.lbdcost
