@@ -366,7 +366,7 @@ class Network:
     def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        max_iter = 40
+        max_iter = 20
         min_gap = 1E-4
         
         self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
