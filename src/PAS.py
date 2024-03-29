@@ -247,6 +247,6 @@ class PAS:
             
         
         
-        #print("after shift "+str(self.getTT(0, type)))
+        #print("after shift "+str(bot)+" "+str(self.getTT(0, type)))
         
         return True
