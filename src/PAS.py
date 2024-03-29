@@ -237,6 +237,6 @@ class PAS:
             
         
         
-        #System.out.println("after shift "+getTT(0));
+        #print("after shift "+str(self.getTT(0, type)))
         
         return True

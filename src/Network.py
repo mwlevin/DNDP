@@ -366,11 +366,12 @@ class Network:
     def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        max_iter = 6
+        max_iter = 40
         min_gap = 1E-4
         
         self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
+        last_iter_gap = 1
         
         for r in self.zones:
             r.bush = Bush.Bush(self, r)
@@ -433,13 +434,17 @@ class Network:
             # there's an issue where PAS are labeled as not cost effective because the difference in cost is small, less than 5% of the reduced cost
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
-            if gap < self.params.pas_cost_mu:
+            if (last_iter_gap - gap) / gap < 0.01:
                 self.params.pas_cost_mu /= 10
                 self.params.line_search_gap /= 10
                 
                 if self.params.PRINT_TAPAS_INFO:
-                    print("Adjusting parameters due to small gap");
-
+                    print("Adjusting parameters due to small gap")
+                    
+        
+            last_iter_gap = gap
+            
+            
     def getLx(self, lbd, y):
         Lx = 0
         for ij in self.links:
