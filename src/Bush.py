@@ -29,13 +29,13 @@ class Bush:
     def contains(self, l):
         return self.flow[l] > self.network.params.flow_epsilon
 
-    def containsNode(n):
-        if n == origin:
+    def containsNode(self, n):
+        if n == self.origin:
             return True
 
 
         for l in n.incoming:
-            if contains(l):
+            if self.contains(l):
                 return True
 
         return False
@@ -202,24 +202,24 @@ class Bush:
     def tracePath2(self, i, j):
         output = []
         
-        curr = j;
+        curr = j
         
         while curr != i:
-
-            output.add(curr.pred)
-            curr = curr.pred2.getSource()
+            print(str(curr)+" "+str(curr.pred2)+" "+str(i)+" "+str(j))
+            output.append(curr.pred2)
+            curr = curr.pred2.start
         
         return output
     
     def tracePathSet(self, i, j):
         output = set()
         
-        curr = j;
+        curr = j
         
         while curr != i:
 
             output.add(curr.pred)
-            curr = curr.pred.getSource()
+            curr = curr.pred.start
         
         return output
     
@@ -258,8 +258,9 @@ class Bush:
         
         
         for b in self.branches:
-            b.init()
-            b.flowShift()
+            if self.flow[b.endlink] > self.network.params.flow_epsilon:
+                b.init()
+                b.flowShift()
             
         
         branches = []
@@ -290,6 +291,11 @@ class Bush:
     
     
     def addFlow(self, l, x):
+        
+        if self.flow[l] + x < -self.network.params.flow_epsilon:
+            print("attempt to add flow "+str(self.flow[l])+" "+str(x))
+            crash*2
+            
         l.x += x
         self.flow[l] += x
         

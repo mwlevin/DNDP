@@ -5,15 +5,15 @@ class Branch:
 
     # this is just a placeholder that says this branch has a specific endlink and a minpath. The actual links in the branch will be determined later.
     def __init__(self, bush, endlink, minpath):
-        self.bush = bush;
-        linkflows = {}
+        self.bush = bush
+        self.linkflows = {}
         
         self.endlink = endlink
         self.minpath = minpath
         self.maxflow = 0
         
         
-    def init():
+    def init(self):
         
         
         for n in self.bush.network.nodes:
@@ -24,14 +24,15 @@ class Branch:
         
         branchlinks = set()
         
-        unvisited.add(endlink.start)
+        unvisited.append(self.endlink.start)
         
         while len(unvisited) > 0:
             j = unvisited.pop()
             
-            for ij in j.getIncoming():
+            for ij in j.incoming:
  
-                if bush.contains(ij):
+                print("\t"+str(ij.start)+" "+str(ij.end)+" "+str(self.bush.flow[ij])+" "+str(ij.x))
+                if self.bush.contains(ij):
                     i = ij.start
                     
                     branchlinks.add(ij)
@@ -41,28 +42,33 @@ class Branch:
                         unvisited.append(i)
                         i.visited = True
 
-        self.maxflow = self.bush.getFlow(endlink)
+        self.maxflow = self.bush.flow[self.endlink]
+        
+        print("maxflow = "+str(self.maxflow)+" "+str(branchlinks)+" "+str(len(branchlinks))+" "+str(self.endlink))
+            
         # now do Ford-Fulkerson to figure out branch flow on each link
         # the "capacities" are the bush flow on each link
         # due to conservation of flow I don't need to add flow in reverse. DFS will be sufficient.
         
         
         for l in branchlinks:
-            linkflows[l] = 0.0
+            self.linkflows[l] = 0.0
         
         
         start = self.bush.origin
         end = self.endlink.start
-        linkflows[endlink] = self.maxflow
+        self.linkflows[self.endlink] = self.maxflow
         
         
         assignedFlow = 0
+        
+
         
         # while there is flow left to assign
         # use flow epsilon to avoid numerical error causing infinite loop
         while self.maxflow - assignedFlow > self.bush.network.params.flow_epsilon:
             
-            #System.out.println(maxflow+" "+assignedFlow);
+            print(str(self.maxflow)+" "+str(assignedFlow))
             
             # DFS find path
             unvisited = []
@@ -77,7 +83,7 @@ class Branch:
             while len(unvisited) > 0:
                 i = unvisited.pop()
                 
-
+                print("evaluate "+str(i))
                 # once DFS finds a path, stop and add flow. That path will become unusable
                 if i == end:
                     break
@@ -85,11 +91,15 @@ class Branch:
                 expanded = []
                 for ij in i.outgoing:
                     # only expand links with positive bush flow - temporary branch flow
-                    if ij in branchlinks and not ij.end.visited and self.bush.flow[ij] - linkflows[ij] > self.bush.network.params.flow_epsilon:
-                        expanded.add(ij)
+                    if ij in branchlinks and not ij.end.visited and self.bush.flow[ij] - self.linkflows[ij] > self.bush.network.params.flow_epsilon:
+                        expanded.append(ij)
+                    if ij in branchlinks:
+                        print("\t"+str(ij.start)+" "+str(ij.end)+" "+str(self.bush.flow[ij] - self.linkflows[ij]))
                 
                 # sort in order of decreasing flow
-                expanded.sort(key = lambda x: bush.flow[x] - linkflows[x])
+                expanded.sort(key = lambda x: self.bush.flow[x] - self.linkflows[x])
+                
+                print("expanded "+str(expanded)+" "+str(branchlinks)+" "+str(len(branchlinks)))
                 
                 #Collections.sort(expanded, new Comparator<Link>(){
                 #    public int compare(Link i, Link j){
@@ -110,11 +120,11 @@ class Branch:
             sendFlow = self.maxflow - assignedFlow
             
             for l in augmentedPath:
-                sendFlow = min(sendFlow, self.bush.flow[l] - linkflows[l])
+                sendFlow = min(sendFlow, self.bush.flow[l] - self.linkflows[l])
             
             
             for l in augmentedPath:
-                linkflows[l] = linkflows[l] + sendFlow
+                self.linkflows[l] = self.linkflows[l] + sendFlow
             
             assignedFlow += sendFlow
      
@@ -161,58 +171,58 @@ class Branch:
         # this is used in case the min links are also on the branch
         prop = shift/self.maxflow
         
-        for l in minpath:
+        for l in self.minpath:
             newflow = l.x
             
             # add flow to the minpath
             newflow += shift
             
             # if link is in branch, some flow will be shifted:
-            if l in linkflows:
-                newflow -= prop * linkflows[l]
+            if l in self.linkflows:
+                newflow -= prop * self.linkflows[l]
             
             output += l.getTravelTime(newflow, type)
         
         return output
         
     # consider shifting flow from branch to minpath
-    def getAvgTT(shift, type):
+    def getAvgTT(self, shift, type):
         output = 0
         
         # proportional shift based on how much of the branch flow is on each link
         prop = shift/self.maxflow
   
-        for l in linkflows:
+        for l in self.linkflows:
             
             # subtract the flowshift
-            flowchange = linkflows[l]*prop
+            flowchange = self.linkflows[l]*prop
             newflow = l.x - flowchange
             
             # if link is on minpath, then add the entire shift to it
             
-            if l in minpath:
+            if l in self.minpath:
                 newflow += shift
 
-            output += (linkflows[l] - flowchange) * l.getTravelTime(newflow, type)
+            output += (self.linkflows[l] - flowchange) * l.getTravelTime(newflow, type)
         
         return output / (self.maxflow - shift)
     
     def propAddFlow(self, shift):
         prop = shift/self.maxflow
         
-        for l in linkflows:
-            bush.addFlow(l, -linkflows[l]*prop)
+        for l in self.linkflows:
+            self.bush.addFlow(l, -self.linkflows[l]*prop)
             
             # this isn't needed: the branch will be discarded after equilibrating.
             if self.bush.network.params.DEBUG_CHECKS:
-                linkflows[l] = linkflows[l] * (1-prop)
+                self.linkflows[l] = self.linkflows[l] * (1-prop)
 
         for l in self.minpath:
-            bush.addFlow(l, shift)
+            self.bush.addFlow(l, shift)
             
             # this isn't needed: the branch will be discarded after equilibrating.
             if self.bush.network.params.DEBUG_CHECKS:
-                linkflows[l] = linkflows[l] + shift
+                self.linkflows[l] = self.linkflows[l] + shift
 
         self.maxflow -= shift
     

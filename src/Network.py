@@ -366,7 +366,7 @@ class Network:
     def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        max_iter = 20
+        max_iter = 30
         min_gap = 1E-4
         
         self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
@@ -435,11 +435,11 @@ class Network:
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if (last_iter_gap - gap) / gap < 0.01:
-                self.params.pas_cost_mu /= 10
-                self.params.line_search_gap /= 10
+                #self.params.pas_cost_mu /= 10
+                #self.params.line_search_gap /= 10
                 
                 if self.params.PRINT_TAPAS_INFO:
-                    print("Adjusting parameters due to small gap")
+                    print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
                     
         
             last_iter_gap = gap

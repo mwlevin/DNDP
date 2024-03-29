@@ -119,7 +119,7 @@ class PAS:
     def maxForwardBushFlowShift(self, bush):
         max = 1E9
             
-        for l in self.backwardlinks:
+        for l in self.forwardlinks:
             # check flow on link if l in backwards direction
             max = min(max, bush.flow[l])
 
@@ -130,7 +130,7 @@ class PAS:
     def maxBackwardBushFlowShift(self, bush):
         max = 1E9
             
-        for l in self.forwardlinks:
+        for l in self.backwardlinks:
             # check flow on link if l in backwards direction
             max = min(max, bush.flow[l])
 
@@ -188,10 +188,10 @@ class PAS:
         maxFlowShift = {}
         
         if backwards > 0:
-            maxFlowShift = self.maxForwardFlowShift()
+            maxFlowShift = self.maxBackwardFlowShift()
         
         else:
-            maxFlowShift = self.maxBackwardFlowShift()
+            maxFlowShift = self.maxForwardFlowShift()
         
         
         for b in maxFlowShift:
@@ -203,6 +203,18 @@ class PAS:
         
 
         #print("max shift "+str(overallMaxShift)+" "+str(backwards)+" "+str(backwardcost)+" "+str(forwardcost))
+        
+        #print("backwards")
+        #for l in self.backwardlinks:
+        #    for r in self.relevant:
+        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.flow[l]))
+        #print("forwards")
+        #for l in self.forwardlinks:
+        #    for r in self.relevant:
+        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.flow[l]))
+
+        #for r in self.relevant:
+        #    print(str(r)+" "+str(maxFlowShift[r.bush]))
         
         bot = 0
         top = overallMaxShift
@@ -220,20 +232,18 @@ class PAS:
             else:
                 top = mid
             
-        
-        
 
         for l in self.forwardlinks:
             for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
-                r.bush.addFlow(l, maxFlowShift[b] / overallMaxShift * bot * backwards)
+                r.bush.addFlow(l, maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
             
         
         
         for l in self.backwardlinks:
             for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
-                r.bush.addFlow(l, -maxFlowShift[b] / overallMaxShift * bot * backwards)
+                r.bush.addFlow(l, -maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
             
         
         
