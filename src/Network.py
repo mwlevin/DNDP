@@ -354,8 +354,9 @@ class Network:
     def getTSTT(self, type):
         output = 0.0
         for ij in self.links:
-            tt = ij.getTravelTime(ij.x, type)
-            output += ij.x * tt
+            if ij.y == 1 or ij.x > self.params.flow_epsilon:
+                tt = ij.getTravelTime(ij.x, type)
+                output += ij.x * tt
             #print(ij.x)
             #print(str(link)+ "\t" + ij, 'flow'+ "\t" +ij.x,'travel time'+ "\t" +tt, 'free flow travel time'+ "\t" +ij.t_ff, 'alpha'+ "\t" +ij.alpha, 'beta'+ "\t" +ij.beta, ij.C)
             #print('link: {}\tflow: {}\ttravel time: {}\tfree flow travel time: {}\talpha: {}\tbeta: {}\tC: {}'.format(str(ij), ij.x, tt, ij.t_ff, ij.alpha, ij.beta, ij.C))
@@ -423,6 +424,8 @@ class Network:
                 else:
                     newlinks.append(ij)
             ij.y = y[ij]
+            
+        # delete PAS using removedlinks
         
         for r in self.origins:
             if r.bush != None:
@@ -529,7 +532,7 @@ class Network:
                             
                 for a in r.bush.relevantPAS.forward:
                     for p in r.bush.relevantPAS.forward[a]:
-                        p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap)
+                        p.flowShift(self.type, self.params)
                         
                         # for every active PAS
                         
@@ -635,7 +638,7 @@ class Network:
         for a in self.allPAS.forward:
             for p in self.allPAS.forward[a]:
 
-                if p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap):
+                if p.flowShift(self.type, self.params):
                     output = True
                     p.lastIterFlowShift = iter
 

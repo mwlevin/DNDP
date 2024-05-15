@@ -33,7 +33,7 @@ class Branch:
                 if self.bush.contains(ij):
                     i = ij.start
                     
-                    branchlinks.add(ij)
+                    branchlinks.append(ij)
                     
                     
                     if not i.visited:

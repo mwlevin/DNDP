@@ -186,7 +186,28 @@ class PAS:
 
             return maxFlowPerBush
     
-    def flowShift(self, type, cost_mu, flow_mu, line_search_gap):
+    def zeroBackwardFlow(self, bush):
+        maxFlowShift = self.maxBackwardBushFlowShift(bush)
+        
+        for l in self.forwardlinks:
+            # proportion allocated to bush is bush max shift / total max shift
+            bush.addFlow(l, maxFlowShift)
+            #print(f"maxFlowShift[r.bush] {maxFlowShift[r.bush]}")
+            #print(f"overallMaxShift is {overallMaxShift}")
+            #print(f"The bot is {bot}")
+            #print(f"The backwards is {backwards}")
+        
+        
+        
+        for l in self.backwardlinks:
+            # proportion allocated to bush is bush max shift / total max shift
+            #print(-maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
+            #print(f'-maxFlowShift[r.bush] {-maxFlowShift[r.bush]}, overallMaxShift {overallMaxShift},bot{bot},backwards{backwards}')
+            bush.addFlow(l, -maxFlowShift)
+            
+        
+        
+    def flowShift(self, type, params):
         
         forwardcost = self.getForwardCost(type)
         backwardcost = self.getBackwardCost(type)
@@ -202,7 +223,7 @@ class PAS:
         #print("flow shift? " +str(costdiff)+" "+str(forwardcost)+" "+str(backwardcost)+" "+str(cost_mu)+" "+str(backwards))
         
         # maybe the forward and backward costs will be reversed sometimes
-        if (backwards == 1 and costdiff < cost_mu * forwardcost) or (backwards == -1 and -costdiff < cost_mu * backwardcost):
+        if (backwards == 1 and costdiff < params.pas_cost_mu * forwardcost) or (backwards == -1 and -costdiff < params.pas_cost_mu * backwardcost):
         
             return False
 
@@ -226,7 +247,7 @@ class PAS:
             overallMaxShift += maxFlowShift[b]
         
         
-        if overallMaxShift < flow_mu:
+        if overallMaxShift < params.pas_flow_mu:
             return False
         
 
@@ -247,7 +268,7 @@ class PAS:
         bot = 0
         top = overallMaxShift
         #with open('flowShift3.txt', 'a') as file, contextlib.redirect_stdout(file):
-        while top - bot > line_search_gap:
+        while top - bot > params.line_search_gap:
             #print(line_search_gap)
             mid = (top + bot)/2
             

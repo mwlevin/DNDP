@@ -215,7 +215,28 @@ class Bush:
     
     
     def removeLinks(self, removedlinks):
-        pass
+
+        minPathTree = self.network.getSPTree(self.origin)
+        
+        for l in removedlinks:
+            if self.contains(l):
+                if l.end == self.origin:
+                    continue
+                elif l.start == self.origin:
+                    # need a PAS shift here
+                    pas = self.createOriginLinkPAS(minPathTree, l)
+                    pas.zeroBackwardFlow(self)
+                else:
+                    branch = self.createBranch(l)
+                    if branch is not None:
+                        #print("branch shift ", self.origin, l, self.getFlow(l))
+                        branch.init()
+                        branch.flowShift(type)
+                        #print(self.getFlow(l))
+                    #else:
+                        #print("branch is null ", self.origin, l)
+                    
+   
             
     def addLinks(self, newlinks):  
         # does this create a new shortest path?
@@ -225,7 +246,7 @@ class Bush:
         minPathTree = self.network.getSPTree(self.origin)
         
         for l in newlinks:
-            if l not in included and l.end != self.origin and l.start != self.origin and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
+            if l not in included and l.end != self.origin and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
                 #print(f"included is {included}")
                 #print(f"l.end is {l.end} and l.start is {l.start}")
                 #print(f"self.flow of l is {self.flow}")
@@ -244,11 +265,19 @@ class Bush:
                         if self.network.params.PRINT_PAS_INFO:
                             print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
 
-                        newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
+                        newPAS = None
+                        
+                        if l.start != self.origin:
+                            newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
+                        else:
+                            newPAS = self.createOriginLinkPAS(minPathTree, l)
                         #print(l)
+                        
                         if newPAS != None:
+                            self.savePAS(newPAS)
                             for ij in newPAS.backwardlinks:
                                 included.add(ij)
+                            
                     else:
                         if self.network.params.PRINT_PAS_INFO:
                             print("Take PAS for " + str(l))
@@ -455,7 +484,7 @@ class Bush:
                     #print(f"l before {l}")
                     #print(n.incoming)
                     # check for links with high reduced cost and positive flow, not just links not on the shortest path
-                    if l not in included and l.end != self.origin and l.start != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
+                    if l not in included and l.end != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
                         #print(f"included is {included}")
                         #print(f"l.end is {l.end} and l.start is {l.start}")
                         #print(f"self.flow of l is {self.flow}")
@@ -473,27 +502,35 @@ class Bush:
 
                                 if self.network.params.PRINT_PAS_INFO:
                                     print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
+
+                                newPAS = None
                                 
-                                newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
+                                if l.start != self.origin:
+                                    newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
+                                else:
+                                    newPAS = self.createOriginLinkPAS(minPathTree, l)
+                                    
                                 #print(l)
-                                if newPAS is None:
+                                if newPAS is None and l.start != self.origin:
                                     # branch shift
                                     if self.network.params.PRINT_PAS_INFO:
                                         print("branch shift!")
-            
+
                                     branch = self.createBranch(l)
                                     if branch is not None:
                                         self.branches.append(branch)
 
                                 else:
+                                    self.savePAS(newPAS)
                                     for ij in newPAS.backwardlinks:
                                         included.add(ij)
                             else:
                                 if self.network.params.PRINT_PAS_INFO:
                                     print("Take PAS for " + str(l))
-                                    
+
                                 fromNetwork.addRelevantOrigin(self.origin)
                                 #print(self.origin)
+
 
     
 
@@ -521,6 +558,8 @@ class Bush:
                         return True
                     
             return False
+            
+    
             
     def removeCycles(self):
 
@@ -644,6 +683,25 @@ class Bush:
                 
             return output
         
+    def createOriginLinkPAS(self, minPathTree, a):
+        output = PAS.PAS()
+
+            
+        output.backwardlinks.append(a)
+        
+        for l in self.network.traceTree(minPathTree, a.start, a.end):
+            #print(f'tree entry {minPathTree}, r {firstSimilar.start}, s {a.end}')
+            output.forwardlinks.append(l)
+            #print(l)
+            
+        output.start = a.start
+        output.end = a.end
+
+        if self.network.params.PRINT_PAS_INFO:
+            print("PAS is "+str(output))
+                
+        return output
+    
     # create a PAS for link a
     def createPAS(self, minPathTree, a, minflow):
         #with open('result149.txt', 'a') as file, contextlib.redirect_stdout(file):
@@ -718,9 +776,9 @@ class Bush:
             # trace firstSimilar to a in min path tree: this is the forward side of the PAS
             with open('result141.txt', 'a') as file, contextlib.redirect_stdout(file):
                 for l in self.network.traceTree(minPathTree, firstSimilar.start, a.end):
-                    print(f'tree entry {minPathTree}, r {firstSimilar.start}, s {a.end}')
+                    #print(f'tree entry {minPathTree}, r {firstSimilar.start}, s {a.end}')
                     output.forwardlinks.append(l)
-                    print(l)
+                    #print(l)
                     
             if len(output.forwardlinks) == 0:
                 return None
@@ -731,10 +789,10 @@ class Bush:
             if self.network.params.PRINT_PAS_INFO:
                 print("PAS is "+str(output))
             
-            
-            output.addRelevantOrigin(self.origin)
             #print(self.origin)
-            
-            self.network.allPAS.add(output)
-            
             return output
+            
+    def savePAS(self, pas):
+        pas.addRelevantOrigin(self.origin)
+             
+        self.network.allPAS.add(pas)

@@ -30,13 +30,13 @@ x0 = {ij:0 for ij in network.links2}
 #---arbitrary (nonzero) lambda
 #lbd = {(i,j):1 for (i,j) in network.links2}
 
-print(network.tapas('UE', y0))
-
-
-
-
-
 print(network.tapas('UE', y1))
+
+
+
+
+
+print(network.tapas('UE', y0))
 
 for ij in network.links2:
     print(ij, ij.x)
