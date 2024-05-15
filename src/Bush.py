@@ -214,13 +214,48 @@ class Bush:
         return True
     
     
-    def removeLink(self, l):
-        if self.getFlow(l) < self.network.params.flow_epsilon:
-            return
+    def removeLinks(self, removedlinks):
         pass
             
-    def addLink(self, l):  
-        pass
+    def addLinks(self, newlinks):  
+        # does this create a new shortest path?
+        
+        included = set()
+        
+        minPathTree = self.network.getSPTree(self.origin)
+        
+        for l in newlinks:
+            if l not in included and l.end != self.origin and l.start != self.origin and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
+                #print(f"included is {included}")
+                #print(f"l.end is {l.end} and l.start is {l.start}")
+                #print(f"self.flow of l is {self.flow}")
+                #print(f"self.network.params.flow_epsilon is {self.network.params.flow_epsilon}")
+                #print(f"the last thing {l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu)}")
+                #print(l)
+                #print(f"selforigin is {self.origin}")
+                #System.out.println(l+" "+l.getDest().cost+" "+l.getSource().cost+" "+(l.getDest().cost-l.getSource().cost)+" "+l.getTT());
+                # we need a PAS!
+                if not self.hasRelevantPAS(l):
+
+                    # should check if we can borrow one from network
+                    fromNetwork = self.network.findPAS(l, self)
+                    if fromNetwork is None:
+
+                        if self.network.params.PRINT_PAS_INFO:
+                            print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
+
+                        newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
+                        #print(l)
+                        if newPAS != None:
+                            for ij in newPAS.backwardlinks:
+                                included.add(ij)
+                    else:
+                        if self.network.params.PRINT_PAS_INFO:
+                            print("Take PAS for " + str(l))
+
+                        fromNetwork.addRelevantOrigin(self.origin)
+                        #print(self.origin)
+   
     
     #def checkReducedCosts(self):
     
@@ -324,9 +359,9 @@ class Bush:
         for u in self.sortted:
             
             for uv in u.getBushOutgoing(self):
-                v = uv.getDest()
+                v = uv.end
                 
-                temp = uv.getTT() + u.cost
+                temp = uv.getTravelTime(uv.x, self.network.type) + u.cost
                 
                 if temp < v.cost:
                     v.cost = temp
@@ -404,7 +439,7 @@ class Bush:
         #print(self.origin)
         
         # only create 1 PAS per link per origin per iteration
-        included = []
+        included = set()
         
         # look for all used links not part of the tree of least cost routes
         # search in backwards topological order
@@ -421,7 +456,7 @@ class Bush:
                     #print(n.incoming)
                     # check for links with high reduced cost and positive flow, not just links not on the shortest path
                     if l not in included and l.end != self.origin and l.start != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
-                        print(f"included is {included}")
+                        #print(f"included is {included}")
                         #print(f"l.end is {l.end} and l.start is {l.start}")
                         #print(f"self.flow of l is {self.flow}")
                         #print(f"self.network.params.flow_epsilon is {self.network.params.flow_epsilon}")
@@ -452,7 +487,7 @@ class Bush:
 
                                 else:
                                     for ij in newPAS.backwardlinks:
-                                        included.append(ij)
+                                        included.add(ij)
                             else:
                                 if self.network.params.PRINT_PAS_INFO:
                                     print("Take PAS for " + str(l))

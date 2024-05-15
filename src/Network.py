@@ -412,17 +412,24 @@ class Network:
                     pi_star.addHstar(r.getDemand(s))
 
     def setY(self, y):
+    
+        newlinks = []
+        removedlinks = []
+        
         for ij in self.links2:
             if y[ij] != ij.y:
                 if y[ij] == 0:
-                    for r in self.origins:
-                        if r.bush != None:
-                            r.bush.removeLink(ij)
-                elif y[ij] == 1:
-                    for r in self.origins:
-                        if r.bush != None:
-                            r.bush.addLink(ij)
-                ij.y = y[ij]
+                    removedlinks.append(ij)
+                else:
+                    newlinks.append(ij)
+            ij.y = y[ij]
+        
+        for r in self.origins:
+            if r.bush != None:
+                r.bush.addLinks(newlinks)
+                r.bush.removeLinks(removedlinks)
+                
+
 
     def msa(self, type, y):
         self.setY(y)
