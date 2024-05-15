@@ -21,7 +21,7 @@ class Zone(Node.Node):
             
         self.totaldemand += dem
         
-    def getTotalDemand(self):
+    def getProductions(self):
         return self.totaldemand
         
     # returns the number of trips from this node to the destination
@@ -32,15 +32,6 @@ class Zone(Node.Node):
             return 0
     
 
-    # returns the total number of outgoing trips from this node
-    def getProductions(self):
-    
-        total = 0.0
-        
-        for s in self.demand.keys():
-            total += self.demand[s]
-        
-        return total
 
     # returns aboolean indicating whether this node is a thru node
     def isThruNode(self):

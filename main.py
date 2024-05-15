@@ -21,6 +21,7 @@ network = Network.Network("SiouxFalls",0.5,500,1e-0,1e-3,600)
 
 
 y1 = {ij:1 for ij in network.links2}
+y0 = {ij:0 for ij in network.links2}
 l0 = {ij:0 for ij in network.links2}
 
 #---initialize link flows in the network (0 is default)
@@ -29,13 +30,16 @@ x0 = {ij:0 for ij in network.links2}
 #---arbitrary (nonzero) lambda
 #lbd = {(i,j):1 for (i,j) in network.links2}
 
+print(network.tapas('UE', y0))
+
+
+
+
+
 print(network.tapas('UE', y1))
 
-
-y0 = {ij:0 for ij in network.links2}
-
-
-print(network.tapas('UE', y1))
+for ij in network.links2:
+    print(ij, ij.x)
 
 
 

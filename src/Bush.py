@@ -214,8 +214,13 @@ class Bush:
         return True
     
     
-
-
+    def removeLink(self, l):
+        if self.getFlow(l) < self.network.params.flow_epsilon:
+            return
+        pass
+            
+    def addLink(self, l):  
+        pass
     
     #def checkReducedCosts(self):
     

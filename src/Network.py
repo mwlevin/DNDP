@@ -15,6 +15,7 @@ class Network:
         self.nodes = [] 
         self.links = []
         self.zones = []
+        self.origins = []
         
         self.links2 = []
         self.type = 'UE'
@@ -197,6 +198,10 @@ class Network:
                     idx = 0
             
         file.close()
+        
+        for r in self.zones:
+            if r.getProductions() > self.params.flow_epsilon:
+                self.origins.append(r)
 
     def getLinks(self):
         return self.links
@@ -361,13 +366,12 @@ class Network:
     def getSPTT(self, type):
         output = 0.0
 
-        for r in self.zones:
-            if r.getProductions() > 0:
-                self.dijkstras(r, type)
+        for r in self.origins:
+            self.dijkstras(r, type)
 
-                for s in self.zones:
-                    if r.getDemand(s) > 0:
-                        output += r.getDemand(s) * s.cost
+            for s in self.zones:
+                if r.getDemand(s) > 0:
+                    output += r.getDemand(s) * s.cost
 
         return output
 
@@ -375,7 +379,7 @@ class Network:
     def getTotalTrips(self):
         output = 0.0
 
-        for r in self.zones:
+        for r in self.origins:
             output += r.getProductions()
 
         return output
@@ -399,23 +403,34 @@ class Network:
 
     # calculate the all-or-nothing assignment
     def calculateAON(self):
-        for r in self.zones:
-            if r.getProductions() > 0:
-                self.dijkstras(r, self.type)
+        for r in self.origins:
+            self.dijkstras(r, self.type)
 
-                for s in self.zones:
-                    if r.getDemand(s) > 0:
-                        pi_star = self.trace(r, s)
-                        pi_star.addHstar(r.getDemand(s))
+            for s in self.zones:
+                if r.getDemand(s) > 0:
+                    pi_star = self.trace(r, s)
+                    pi_star.addHstar(r.getDemand(s))
 
     def setY(self, y):
         for ij in self.links2:
-            ij.y = y[ij]
+            if y[ij] != ij.y:
+                if y[ij] == 0:
+                    for r in self.origins:
+                        if r.bush != None:
+                            r.bush.removeLink(ij)
+                elif y[ij] == 1:
+                    for r in self.origins:
+                        if r.bush != None:
+                            r.bush.addLink(ij)
+                ij.y = y[ij]
 
     def msa(self, type, y):
         self.setY(y)
         self.setType(type)
+        
+        
         max_iteration = 500
+        min_gap = 1E-4
         
         for ij in self.links:
             i = ij.start
@@ -442,27 +457,30 @@ class Network:
             
             if self.params.PRINT_TAP_ITER:
                 print(str(iteration)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+                
+            if gap < min_gap:
+                break
         
         return self.getTSTT('UE')
         
     def resetTapas(self):
-        for r in self.zones:
+        for r in self.origins:
             r.bush = None
             
         for ij in self.links:
             ij.x = 0
-            
+                
         self.params = Params.Params()
         
         self.allPAS = PASList.PASList()
         
     def tapas(self, type, y):
-        self.resetTapas()
+        #self.resetTapas()
         self.setY(y)
         self.setType(type)
         
-        max_iter = 500
-        min_gap = 1E-4
+        max_iter = 50
+        min_gap = 1E-3
         
         #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
@@ -471,8 +489,9 @@ class Network:
             
         last_iter_gap = 1
         
-        for r in self.zones:
-            r.bush = Bush.Bush(self, r)
+        for r in self.origins:
+            if r.bush == None:
+                r.bush = Bush.Bush(self, r)
         
     #with open('output_tapas21.txt', 'w') as file, contextlib.redirect_stdout(file):
     #with open('output_tapas11.txt', 'w') as file:
@@ -482,9 +501,7 @@ class Network:
             #print(custom_x)
             
             # for every origin
-            for r in self.zones:
-                if r.bush is None:
-                    continue
+            for r in self.origins:
             
                 # remove all cyclic flows and topological sort
                 r.bush.removeCycles()
