@@ -49,4 +49,3 @@ class Zone(Node.Node):
     # set a boolean indicating whether this node is a thru node
     def setThruNode(self, thru):
         self.thruNode = thru
-

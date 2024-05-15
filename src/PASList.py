@@ -1,5 +1,6 @@
 # Created on : Mar 27, 2024, 10:28:15 PM
 # Author     : michael
+import contextlib
 
 class PASList:
     def __init__(self):
@@ -10,18 +11,23 @@ class PASList:
         return ij in self.forward or ij in self.backward
     
     def add(self, pas):
-        ij = pas.getEndLinkBwd()
-        if ij not in self.backward:
-            self.backward[ij] = set()
-        
-        self.backward[ij].add(pas)
-        
-        ij = pas.getEndLinkFwd()
-        if ij not in self.forward:
-            self.forward[ij] = set()
-        
-        self.forward[ij].add(pas)
-    
+        #with open('result49.txt', 'a') as file, contextlib.redirect_stdout(file):
+            ij = pas.getEndLinkBwd()
+            #print(ij)
+            if ij not in self.backward:
+                self.backward[ij] = []
+            #print(ij)
+            #print(type(ij))
+            self.backward[ij].append(pas)
+            
+            ij = pas.getEndLinkFwd()
+            if ij not in self.forward:
+                self.forward[ij] = []
+            
+            self.forward[ij].append(pas)
+            #print(ij)
+
+
     def remove(self, pas):
         ij = pas.getEndLinkBwd()
         

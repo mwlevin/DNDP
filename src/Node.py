@@ -1,4 +1,4 @@
-
+import contextlib
 
 class Node:
 
@@ -7,9 +7,9 @@ class Node:
         # used for Dijkstra's implementation
         self.cost = 0.0
         self.id = id
-        self.outgoing = set()
-        self.incoming = set()
-        
+        self.outgoing = []
+        self.incoming = []
+        self.outgoing_edges_list = []
         self.top_order = -1
         self.visited = False
         self.in_degree = 0
@@ -22,24 +22,26 @@ class Node:
     def __repr__(self):
         return str(self)
         
-        
-
-    
     def getBushOutgoing(self, b):
-    
-        output = []
-        
-        for l in self.outgoing:
-            if b.contains(l):
-                output.append(l)
-        
-        return output
+        #with open('result4.txt', 'a') as file, contextlib.redirect_stdout(file):
+            output = []
+            #outgoing = list(l.outgoing)
+            #outgoing_edges_list.sort(key=lambda e: (e.start.id, e.end.id))
+            #for l in self.outgoing:
+            for l in sorted(self.outgoing, key=lambda edge: edge.end.id):
+                #print("l"+"\t"+str(l))
+                #print("self.outgoing"+"\t"+str(self.outgoing))
+                if b.contains(l):
+                    output.append(l)
+            #print("output"+"\t"+str(output))
+            return output
     
     def getBushIncoming(self, b):
     
         output = []
         
         for l in self.incoming:
+            #print(l)
             if b.contains(l):
                 output.append(l)
         
@@ -70,8 +72,16 @@ class Node:
     # Exercise 3(d)
     # **********    
     # adds ij to list of outgoing links
+
     def addOutgoingLink(self, ij):
-        self.outgoing.add(ij)
+        #with open('result39.txt', 'a') as file, contextlib.redirect_stdout(file):
+            self.outgoing.append(ij)
+            #print(ij)
     
     def addIncomingLink(self, ij):
-        self.incoming.add(ij)
+        #with open('result102.txt', 'a') as file, contextlib.redirect_stdout(file):
+            self.incoming.append(ij)
+            #print(ij)
+
+    def __lt__(self, other):
+        return self.id < other.id

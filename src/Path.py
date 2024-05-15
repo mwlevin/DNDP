@@ -5,11 +5,13 @@ class Path:
     def __init__(self):
         self.links = []
         
-    def add(self, ij):
-        self.links.append(ij)
+    #def add(self, ij):
+        #self.links.append(ij)
+        #print(ij)
     
-    def addFront(self, ij):
-        self.links.insert(0, ij)
+    #def addFront(self, ij):
+        #self.links.insert(0, ij)
+        #print(ij)
         
     def size(self):
         return len(self.links)
@@ -33,6 +35,9 @@ class Path:
             if self.links[x].getStart() != self.links[x - 1].getEnd():
                 return False
         return True
+    
+    def addFront(self, ij):
+        self.links.append(ij)
     
     # returns the origin node of this path
     def getSource(self):
