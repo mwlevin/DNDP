@@ -269,8 +269,8 @@ class Bush:
                         
                         if l.start != self.origin:
                             newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
-                        else:
-                            newPAS = self.createOriginLinkPAS(minPathTree, l)
+                        #else:
+                        #    newPAS = self.createOriginLinkPAS(minPathTree, l)
                         #print(l)
                         
                         if newPAS != None:
@@ -507,18 +507,20 @@ class Bush:
                                 
                                 if l.start != self.origin:
                                     newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
-                                else:
-                                    newPAS = self.createOriginLinkPAS(minPathTree, l)
+                                # this was causing a crash??
+                                #else:
+                                #    newPAS = self.createOriginLinkPAS(minPathTree, l)
                                     
                                 #print(l)
-                                if newPAS is None and l.start != self.origin:
-                                    # branch shift
-                                    if self.network.params.PRINT_PAS_INFO:
-                                        print("branch shift!")
+                                if newPAS is None:
+                                    if l.start != self.origin:
+                                        # branch shift
+                                        if self.network.params.PRINT_PAS_INFO:
+                                            print("branch shift!")
 
-                                    branch = self.createBranch(l)
-                                    if branch is not None:
-                                        self.branches.append(branch)
+                                        branch = self.createBranch(l)
+                                        if branch is not None:
+                                            self.branches.append(branch)
 
                                 else:
                                     self.savePAS(newPAS)
