@@ -33,14 +33,14 @@ class Bush:
         #print(origin)
         self.relevantPAS = PASList.PASList()
         
-        for l in self.network.links:
-            self.flow[l] = 0
+        #for l in self.network.links:
+        #    self.flow[l] = 0
             
         self.loadDemand()
         
         
     def contains(self, l):
-        return self.flow[l] > self.network.params.flow_epsilon
+        return l in self.flow and self.flow[l] > self.network.params.flow_epsilon
         
     def getFlow(self, l):
         return self.flow.get(l, 0)
@@ -376,19 +376,22 @@ class Bush:
     
     
     def addFlow(self, l, x):
+        curr_flow = self.getFlow(l)
         #with open('result121.txt', 'a') as file, contextlib.redirect_stdout(file):
-            if self.flow[l] + x < -self.network.params.flow_epsilon:
-                print("attempt to add flow "+str(self.flow[l])+" "+str(x))
-                print(l.id)
-                print(self.origin)
-                # crash*2
-                raise("Crash * 2")
+        if curr_flow + x < -self.network.params.flow_epsilon:
+            raise("attempt to add flow to link "+str(l.id)+" from bush "+str(self.origin)+" of flow "+str(self.flow[l])+" "+str(x))
+
             #print(f"the l.x is {l.x}")
-            l.x += x
+        l.x += x
             #print(f"The l.x after adding x is {l.x} and x is {x}")
-            self.flow[l] += x
+        curr_flow += x
+        
+        if curr_flow > self.network.params.flow_epsilon:
+            self.flow[l] = curr_flow
+        elif l in self.flow:
+            del self.flow[l]
             #print(f"The self.flow of l is {self.flow[l]}")
-            
+
         
     def checkPAS(self):
         
