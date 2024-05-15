@@ -120,7 +120,7 @@ class Branch:
             sendFlow = self.maxflow - assignedFlow
             
             for l in augmentedPath:
-                sendFlow = min(sendFlow, self.bush.flow[l] - self.linkflows[l])
+                sendFlow = min(sendFlow, self.bush.getFlow(l) - self.linkflows[l])
             
             
             for l in augmentedPath:

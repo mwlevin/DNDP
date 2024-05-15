@@ -41,7 +41,10 @@ class Bush:
         
     def contains(self, l):
         return self.flow[l] > self.network.params.flow_epsilon
-
+        
+    def getFlow(self, l):
+        return self.flow.get(l, 0)
+        
     #def containsNode(self, n):
         #if n == self.origin:
             #print(n)
@@ -337,7 +340,7 @@ class Bush:
     def branchShifts(self):
 
         for b in self.branches:
-            if self.flow[b.endlink] > self.network.params.flow_epsilon:
+            if self.getFlow(b.endlink) > self.network.params.flow_epsilon:
                 b.init()
                 b.flowShift(type)
                 #print(b)
@@ -409,7 +412,7 @@ class Bush:
                     #print(f"l before {l}")
                     #print(n.incoming)
                     # check for links with high reduced cost and positive flow, not just links not on the shortest path
-                    if l not in included and l.end != self.origin and l.start != self.origin and self.flow[l] > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
+                    if l not in included and l.end != self.origin and l.start != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
                         print(f"included is {included}")
                         #print(f"l.end is {l.end} and l.start is {l.start}")
                         #print(f"self.flow of l is {self.flow}")
@@ -428,7 +431,7 @@ class Bush:
                                 if self.network.params.PRINT_PAS_INFO:
                                     print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
                                 
-                                newPAS = self.createPAS(minPathTree, l, self.flow[l] * self.network.params.pas_flow_mu)
+                                newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
                                 #print(l)
                                 if newPAS is None:
                                     # branch shift
@@ -572,7 +575,7 @@ class Bush:
         
         #with open('result119.txt', 'a') as file, contextlib.redirect_stdout(file):
         for l in list:
-            maxflow = min(maxflow, self.flow[l])
+            maxflow = min(maxflow, self.getFlow(l))
             #print(f"maxflow is {maxflow}")
             #print(f"self.flow[l] is {self.flow[l]}")
         
@@ -637,7 +640,7 @@ class Bush:
                 
                 for ij in j.incoming:
                     #print(str(ij.start)+" "+str(ij.end)+" "+str(self.flow[ij])+" "+str(minflow))
-                    if self.flow[ij] > minflow and ij.start.top_order < j.top_order:
+                    if self.getFlow(ij) > minflow and ij.start.top_order < j.top_order:
                     #if self.flow[ij] > minflow:
                         unvisited.append(ij)
                         trace[ij] = jk
@@ -648,7 +651,7 @@ class Bush:
             
             if self.network.params.PRINT_PAS_INFO:
                 print("firstSimilar is "+str(firstSimilar))
-                print(str(trace)+" "+str(minflow)+" "+str(self.flow[a])+" "+str(firstSimilar))
+                print(str(trace)+" "+str(minflow)+" "+str(self.getFlow(a))+" "+str(firstSimilar))
             
             if firstSimilar is None:
                 return None

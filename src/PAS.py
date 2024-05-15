@@ -117,7 +117,7 @@ class PAS:
             # only look at high cost segment
             totalFlow = 0
             for r in sorted(self.relevant, key=lambda x: x.id):
-                totalFlow += r.bush.flow[l]
+                totalFlow += r.bush.getFlow(l)
 
             minflow = min(minflow, totalFlow)
             if l.end == self.end:
@@ -134,8 +134,8 @@ class PAS:
             #print(self.forwardlinks)
             # check flow on link if l in backwards direction
             #print(max)
-            max = min(max, bush.flow[l])
-            #print(bush.flow[l])
+            max = min(max, bush.getFlow(l))
+            #print(bush.getFlow(l))
             #print(f"The result is {max}------------------")
 
         
@@ -149,9 +149,9 @@ class PAS:
         for l in self.backwardlinks:
 
             # check flow on link if l in backwards direction
-            max = min(max, bush.flow[l])
+            max = min(max, bush.getFlow(l))
             #print(f"max {max}-----")
-            #print(l.id, bush.flow[l], bush.origin)
+            #print(l.id, bush.getFlow(l), bush.origin)
             
 
         
@@ -235,11 +235,11 @@ class PAS:
         #print("backwards")
         #for l in self.backwardlinks:
         #    for r in self.relevant:
-        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.flow[l]))
+        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.getFlow(l)))
         #print("forwards")
         #for l in self.forwardlinks:
         #    for r in self.relevant:
-        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.flow[l]))
+        #        print("\t"+str(l.start)+" "+str(l.end)+" "+str(r)+" "+str(r.bush.getFlow(l)))
 
         #for r in self.relevant:
         #    print(str(r)+" "+str(maxFlowShift[r.bush]))
