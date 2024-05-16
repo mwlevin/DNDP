@@ -6,8 +6,6 @@ class Node:
     def __init__(self, id):
         # used for Dijkstra's implementation
         self.cost = 0.0
-        self.cost2 = 0.0
-        
         self.id = id
         self.outgoing = []
         self.incoming = []
@@ -16,7 +14,7 @@ class Node:
         self.visited = False
         self.in_degree = 0
     
-
+        self.cost = 0
         # pred2 is used by bush when not finding shortest paths
         self.pred = None
         self.pred2 = None

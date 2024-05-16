@@ -120,7 +120,7 @@ class Branch:
             sendFlow = self.maxflow - assignedFlow
             
             for l in augmentedPath:
-                sendFlow = min(sendFlow, self.bush.getFlow(l) - self.linkflows[l])
+                sendFlow = min(sendFlow, self.bush.flow[l] - self.linkflows[l])
             
             
             for l in augmentedPath:
@@ -134,23 +134,10 @@ class Branch:
         avgTT = self.getAvgTT(0, type)
         minTT = self.getMinTT(0, type)
         
-
-        '''
-        print("shortest path", self.bush.origin)
-        self.bush.network.getSPTree(self.bush.origin)
-        for n in self.bush.network.nodes:
-            print(n, n.cost, type)
-            for ij in n.outgoing:
-                print("\t", ij, ij.x, ij.start.cost, ij.end.cost, ij.getTravelTime(ij.x, type))
-        '''
+        #System.out.println("cost difference is "+avgTT+" "+minTT);
+         
         # difference is too small to be worth shifting
-      
-        if avgTT - minTT < minTT * self.bush.network.params.pas_cost_epsilon:
-            
-            #print("hi1", avgTT, minTT, avgTT-minTT, self.endlink.end.cost, self.bush.origin)
-            #for l in self.minpath:
-            #    print("\t", l, l.end.cost, l.getTravelTime(l.x, type))
-            
+        if avgTT - minTT < minTT * self.bush.network.params.pas_cost_mu:
             return 0
         
         bot = 0
@@ -170,12 +157,11 @@ class Branch:
             else:
                 # shift less
                 top = mid
-                
         
-        flowshift = self.propAddFlow(bot)
+        self.propAddFlow(bot)
         
-        #if self.bush.network.params.PRINT_BRANCH_INFO:
-        #print("after branch shift is "+str(self.getAvgTT(0, type))+" "+str(self.getMinTT(0, type))+" "+str(flowshift))
+        if self.bush.network.params.PRINT_PAS_INFO:
+            print("after shift is "+str(self.getAvgTT(0))+" "+str(self.getMinTT(0))+" "+str(self.maxflow))
 
         return bot
     
@@ -258,4 +244,4 @@ class Branch:
                 #self.linkflows[l] = self.linkflows[l] + shift
 
         self.maxflow -= shift
-        return shift
+    

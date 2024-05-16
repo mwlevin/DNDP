@@ -1,4 +1,4 @@
-from src import Params
+
 
 class Link:
 
@@ -12,11 +12,7 @@ class Link:
         self.alpha = alpha
         self.beta = beta
         self.x = 0
-        self.y = 1
         self.cost = cost # for DNDP
-        
-        
-        self.visit_order = -1
         
         if start is not None:
             start.addOutgoingLink(self)
@@ -41,18 +37,11 @@ class Link:
 
 
     def getTravelTime(self, x, type):
-        if self.y == 0:
-            return Params.INFTY
-            
-        
         output = self.t_ff * (1 + self.alpha * pow(x / self.C, self.beta))
-        #print(type)
+        #print(output)
         
-        #t = tff (1 + a * (x/c)^b)
-        #t' = tff * a * b * (x/c)^b-1 / c
-        
-        if type == 'SO':
-            output += x * self.t_ff * self.alpha * self.beta * pow(x / self.C, self.beta-1) / self.C
+        #if type == 'SO':
+        #    output += self.t_ff * self.alpha * self.beta * pow(x / self.C, self.beta-1) / self.C
         
         #if type != 'TT':
         #    output += self.lbdcost
@@ -65,7 +54,7 @@ class Link:
     def getFlow(self):
         return self.x
         
-    
+
         
 
     def __str__(self):
@@ -77,11 +66,11 @@ class Link:
         #print(xstar)
         
     
-    def calculateNewX(self, stepsize):
+    #def calculateNewX(self, stepsize):
         #print(str(self.x)+"\t"+ str(self.xstar))
         
-        self.x = (1 - stepsize) * self.x + stepsize * self.xstar
-        self.xstar = 0
+        #self.x = (1 - stepsize) * self.x + stepsize * self.xstar
+        #self.xstar = 0
         #print(f"After recalculating, new x = {self.x}, reset xstar = {self.xstar}")
         #print(self.xstar)
         
@@ -91,8 +80,3 @@ class Link:
         
         return tt - reducedCost > tt*percent
  
-    def getReducedCost(self, type):
-        reducedCost = self.end.cost - self.start.cost
-        tt = self.getTravelTime(self.x, type)
-        #print(tt, reducedCost)
-        return tt - reducedCost

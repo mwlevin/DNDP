@@ -11,13 +11,12 @@ import math
 class Network:
 
     # construct this Network with the name; read files associated with network name
-    def __init__(self,name,ins,B_prop,scal_time,scal_flow):
+    def __init__(self, name,B_prop,m,scal_time,scal_flow,timelimit):
         self.nodes = [] 
         self.links = []
         self.zones = []
-        self.origins = []
         
-        self.links2 = []
+        self.links2 = {}
         self.type = 'UE'
         self.TD = 0
         self.TC = 0 # total cost
@@ -29,11 +28,8 @@ class Network:
         self.inf = 1e+9
         self.tol = 1e-2
         
-        if len(ins) == 0:
-            ins = "net"
-            
-        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow)
-        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow)
+        self.readNetwork("data/"+name+"/net.txt",m,scal_time,scal_flow,timelimit)
+        self.readTrips("data/"+name+"/trips.txt",m,scal_time,scal_flow,timelimit)
         
         self.B = self.TC * B_prop # budget
         
@@ -45,7 +41,7 @@ class Network:
         self.type = type
         
     # read file "/net.txt"
-    def readNetwork(self,netFile,scal_time,scal_flow):
+    def readNetwork(self, netFile,m,scal_time,scal_flow,timelimit):
 
         
         firstThruNode = 1
@@ -60,8 +56,10 @@ class Network:
         
         while line.strip() != "<END OF METADATA>":
             line = file.readline()
-            if "<NUMBER OF ZONES>" in line:            
-                numZones = int(line[line.index('>') + 1:].strip())            
+            if "<NUMBER OF ZONES>" in line:
+            
+                numZones = int(line[line.index('>') + 1:].strip());
+            
             elif "<NUMBER OF NODES>" in line:
                 numNodes = int(line[line.index('>') + 1:].strip())
             elif "<NUMBER OF LINKS>" in line:
@@ -112,8 +110,8 @@ class Network:
             self.links.append(link)
             #print(self.links)
             
-            if i >= numLinks:
-                self.links2.append(link)
+            if i > numLinks:
+                self.links2[(start, end)] = link
             
             #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
             #print(f"Start Node: {start}, End Node: {end}")
@@ -125,7 +123,7 @@ class Network:
             #print(self.links)
 
 
-    def readTrips(self,tripsFile,scal_time,scal_flow):
+    def readTrips(self, tripsFile,m,scal_time,scal_flow,timelimit):
 
         # **********
         # Exercise 5(d)
@@ -199,10 +197,6 @@ class Network:
                     idx = 0
             
         file.close()
-        
-        for r in self.zones:
-            if r.getProductions() > self.params.flow_epsilon:
-                self.origins.append(r)
 
     def getLinks(self):
         return self.links
@@ -257,11 +251,11 @@ class Network:
         cost, node = min((n.cost, n) for n in set)
         return node
 
-    def dijkstras(self, origin, type):
+    def dijkstras(self, origin):
         #with open('result69.txt', 'a') as file, contextlib.redirect_stdout(file):
         
             for n in self.nodes:
-                n.cost = Params.INFTY
+                n.cost = self.params.INFTY
                 n.pred = None
 
             origin.cost = 0.0
@@ -289,8 +283,10 @@ class Network:
 
                     #print(f"this is v {v}")
                     #print(f"uv.x before {uv.x}")
-                    tt = uv.getTravelTime(uv.x, type)
-                    #print("\t\tadjust", uv, uv.x, tt, uv.start.cost, uv.end.cost)
+                    tt = uv.getTravelTime(uv.x, self.type)
+                    #print(f"here is uv.x {uv.x}")
+                    #print(self.type)
+                    #print(f"this is tt {tt}")
                     if u.cost + tt < v.cost:
                         v.cost = u.cost + tt
                         v.pred = uv
@@ -337,12 +333,12 @@ class Network:
             return output
 
     def getSPTree(self, r):
-        self.dijkstras(r, self.type)
+        self.dijkstras(r)
         
         output = {}
         
         for n in self.nodes:
-            if n != r and n.cost < Params.INFTY:
+            if n != r and n.cost < self.params.INFTY:
                 output[n] = n.pred
                 
 
@@ -350,12 +346,11 @@ class Network:
         return output
     
     # returns the total system travel time
-    def getTSTT(self, type):
+    def getTSTT(self):
         output = 0.0
         for ij in self.links:
-            if ij.y == 1 or ij.x > self.params.flow_epsilon:
-                tt = ij.getTravelTime(ij.x, type)
-                output += ij.x * tt
+            tt = ij.getTravelTime(ij.x, self.type)
+            output += ij.x * tt
             #print(ij.x)
             #print(str(link)+ "\t" + ij, 'flow'+ "\t" +ij.x,'travel time'+ "\t" +tt, 'free flow travel time'+ "\t" +ij.t_ff, 'alpha'+ "\t" +ij.alpha, 'beta'+ "\t" +ij.beta, ij.C)
             #print('link: {}\tflow: {}\ttravel time: {}\tfree flow travel time: {}\talpha: {}\tbeta: {}\tC: {}'.format(str(ij), ij.x, tt, ij.t_ff, ij.alpha, ij.beta, ij.C))
@@ -363,15 +358,16 @@ class Network:
         return output
 
     # returns the total system travel time if all demand is on the shortest path
-    def getSPTT(self, type):
+    def getSPTT(self):
         output = 0.0
 
-        for r in self.origins:
-            self.dijkstras(r, type)
+        for r in self.zones:
+            if r.getProductions() > 0:
+                self.dijkstras(r)
 
-            for s in self.zones:
-                if r.getDemand(s) > 0:
-                    output += r.getDemand(s) * s.cost
+                for s in self.zones:
+                    if r.getDemand(s) > 0:
+                        output += r.getDemand(s) * s.cost
 
         return output
 
@@ -379,7 +375,7 @@ class Network:
     def getTotalTrips(self):
         output = 0.0
 
-        for r in self.origins:
+        for r in self.zones:
             output += r.getProductions()
 
         return output
@@ -403,43 +399,20 @@ class Network:
 
     # calculate the all-or-nothing assignment
     def calculateAON(self):
-        for r in self.origins:
-            self.dijkstras(r, self.type)
+        for r in self.zones:
+            if r.getProductions() > 0:
+                self.dijkstras(r)
 
-            for s in self.zones:
-                if r.getDemand(s) > 0:
-                    pi_star = self.trace(r, s)
-                    pi_star.addHstar(r.getDemand(s))
-
-    def setY(self, y):
-    
-        newlinks = []
-        removedlinks = []
-        
-        for ij in self.links2:
-            if y[ij] != ij.y:
-                if y[ij] == 0:
-                    removedlinks.append(ij)
-                else:
-                    newlinks.append(ij)
-            ij.y = y[ij]
-            
-        # delete PAS using removedlinks
-        
-        for r in self.origins:
-            if r.bush != None:
-                r.bush.addLinks(newlinks)
-                r.bush.removeLinks(removedlinks)
-                
+                for s in self.zones:
+                    if r.getDemand(s) > 0:
+                        pi_star = self.trace(r, s)
+                        pi_star.addHstar(r.getDemand(s))
 
 
-    def msa(self, type, y):
-        self.setY(y)
+    def msa(self, type, lbd, y, xinit):
+
         self.setType(type)
-        
-        
-        max_iteration = 500
-        min_gap = 1E-4
+        max_iteration = 1000
         
         for ij in self.links:
             i = ij.start
@@ -447,8 +420,8 @@ class Network:
             if (i,j) in y:            
                 ij.setlbdCost(lbd[(i,j)]*y[(i,j)] + self.inf*(1 - y[(i,j)]))
         
-        if self.params.PRINT_TAP_ITER:
-            print("Iteration\tTSTT\tSPTT\tgap\tAEC")
+        
+        output = "Iteration\tAEC\n"
         
         
         
@@ -459,53 +432,23 @@ class Network:
             
             self.calculateNewX(stepsize)
             
-            tstt = self.getTSTT(self.type)
-            sptt = self.getSPTT(self.type)
-            gap = (tstt - sptt)/tstt
-            aec = (tstt - sptt)/self.TD
-            
-            if self.params.PRINT_TAP_ITER:
-                print(str(iteration)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
-                
-            if gap < min_gap:
-                break
+            output += str(iteration) + "\t" + str(self.getAEC()) + "\n"
         
-        return self.getTSTT('UE')
+        return self.getLx(lbd, y), self.getXDict(), self.getTSTT()
         
-    def resetTapas(self):
-        for r in self.origins:
-            r.bush = None
-            
-        for ij in self.links:
-            ij.x = 0
-                
-        self.params = Params.Params()
-        
-        self.allPAS = PASList.PASList()
-        
-    def tapas(self, type, y):
-        if not self.params.warmstart:
-            self.resetTapas()
-            
-        self.setY(y)
+    def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        print(type)
-        print(y)
-        
-        max_iter = 100
-        min_gap = 1E-3
+        max_iter = 50
+        min_gap = 1E-4
         
         #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
-        if self.params.PRINT_TAP_ITER:
-            print("Iteration\tTSTT\tSPTT\tgap\tAEC")
-            
+        
         last_iter_gap = 1
         
-        for r in self.origins:
-            if r.bush == None:
-                r.bush = Bush.Bush(self, r)
+        for r in self.zones:
+            r.bush = Bush.Bush(self, r)
         
     #with open('output_tapas21.txt', 'w') as file, contextlib.redirect_stdout(file):
     #with open('output_tapas11.txt', 'w') as file:
@@ -515,18 +458,14 @@ class Network:
             #print(custom_x)
             
             # for every origin
-            for r in self.origins:
+            for r in self.zones:
+                if r.bush is None:
+                    continue
             
                 # remove all cyclic flows and topological sort
-                if self.params.PRINT_TAPAS_INFO:
-                    print("removing cycles", r)
-                    
                 r.bush.removeCycles()
                 # find tree of least cost routes
                             
-                if self.params.PRINT_TAPAS_INFO:
-                    print("checking for PAS", r)
-                                
                 r.bush.checkPAS()
                 # for every link used by the origin which is not part of the tree
                     # if there is an existing effective PAS
@@ -536,23 +475,16 @@ class Network:
                                     
                 # choose a random subset of active PASs
                 # shift flow within each chosen PAS
-                
-                if self.params.PRINT_TAPAS_INFO:
-                    print("starting branch shifts", r)
+                                
                 r.bush.branchShifts()
 
-                if self.params.PRINT_TAPAS_INFO:
-                    print("initial flow shifts", r)
-                              
+                            
                 for a in r.bush.relevantPAS.forward:
                     for p in r.bush.relevantPAS.forward[a]:
-                        p.flowShift(self.type, self.params)
+                        p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap)
                         
                         # for every active PAS
-             
-            if self.params.PRINT_TAPAS_INFO:
-                print("general flow shifts")
-                               
+                        
             modified = False
             for shiftIter in range(0, self.params.tapas_equilibrate_iter):
                 # check if it should be eliminated
@@ -566,8 +498,8 @@ class Network:
                     break
 
                             
-            tstt = self.getTSTT(type)
-            sptt = self.getSPTT(type)
+            tstt = self.getTSTT()
+            sptt = self.getSPTT()
             gap = (tstt - sptt)/tstt
             aec = (tstt - sptt)/self.TD
                         
@@ -576,8 +508,8 @@ class Network:
                             # The rest of your original code here...
                         #print(str(iter)+"\tGap: "+str(gap)+"\tAEC: "+str(aec))  # Example print, redirected to file
                             
-            if self.params.PRINT_TAP_ITER:
-                print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+
+            print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
                 
                 #printLinkFlows();
                 
@@ -589,20 +521,14 @@ class Network:
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if (last_iter_gap - gap) / gap < 0.01:
-                
-                for r in self.origins:
-                    r.bush.algBShift()
-                
-                #self.params.bush_gap = max(self.params.bush_gap/10, 1e-5)
-                self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-7)
+                    self.params.pas_cost_mu = max(self.params.pas_cost_mu/10, 1e-9)
+                    self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-9)
                     
-                if self.params.PRINT_TAPAS_INFO:
-                    print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
+                    if self.params.PRINT_TAPAS_INFO:
+                        print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
                         
             
             last_iter_gap = gap
-            
-        return self.getTSTT('UE')
                 
                 
     def getLx(self, lbd, y):
@@ -658,7 +584,8 @@ class Network:
 
         for a in self.allPAS.forward:
             for p in self.allPAS.forward[a]:
-                if p.flowShift(self.type, self.params):
+
+                if p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap):
                     output = True
                     p.lastIterFlowShift = iter
 
