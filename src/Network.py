@@ -29,8 +29,11 @@ class Network:
         self.inf = 1e+9
         self.tol = 1e-2
         
-        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow,timelimit)
-        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow,timelimit)
+        if len(ins) == 0:
+            ins = "net"
+            
+        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow)
+        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow)
         
         self.B = self.TC * B_prop # budget
         
@@ -586,11 +589,15 @@ class Network:
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if (last_iter_gap - gap) / gap < 0.01:
-                    #self.params.bush_gap = max(self.params.bush_gap/10, 1e-5)
-                    self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-7)
+                
+                for r in self.origins:
+                    r.bush.algBShift()
+                
+                #self.params.bush_gap = max(self.params.bush_gap/10, 1e-5)
+                self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-7)
                     
-                    if self.params.PRINT_TAPAS_INFO:
-                        print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
+                if self.params.PRINT_TAPAS_INFO:
+                    print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
                         
             
             last_iter_gap = gap

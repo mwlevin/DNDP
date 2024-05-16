@@ -304,9 +304,18 @@ class Bush:
     
     
     def algBShift(self):
-        minTree = self.minUsedPath()
-        maxTree = self.maxUsedPath()
+    
+        self.topologicalSort()
         
+        minTree = self.minUsedTree()
+        maxTree = self.maxUsedTree()
+        
+        #for n in self.network.nodes:
+        #    print(n, n.cost, n.pred, self.origin.getDemand(n))
+        
+        #for ij in self.flow:
+        #    print(ij, self.getFlow(ij))
+            
         for s in self.network.zones:
             if self.origin.getDemand(s) < self.network.params.flow_epsilon:
                 continue
@@ -315,16 +324,19 @@ class Bush:
             minNodes = set()
             curr = s
             
-            while curr != None:
-                minNodes.add(curr)
+            #print("iter", s, self.origin, s.pred)
+            while curr.pred != None:
+                #print("\t", curr, s, self.origin)
                 curr = curr.pred.start
+                minNodes.add(curr)
                 
             curr = s
             
-            while curr != None:
-                curr = curr.pred2.start
+            while curr.pred2 != None:
+                #print("\tmax", curr, s, self.origin)
                 if curr in minNodes:
                     break
+                curr = curr.pred2.start
             
             common = curr
             
@@ -332,14 +344,16 @@ class Bush:
             minPath = self.tracePath(common, s)
             maxPath = self.tracePath2(common, s)
             
-                
+            #print("alg b paths", common, s, minPath, maxPath)
+            
             # line search to equilibrate minpath and maxpath
-            self.flowShift(minPath, maxPath)
+            if minPath != None and maxPath != None:
+                self.flowShift(minPath, maxPath)
     
-    def getTT(self, path):
+    def getTT(self, add, path):
         output = 0
         for ij in path:
-            output += ij.getTravelTime(ij.x, self.network.type)
+            output += ij.getTravelTime(ij.x + add, self.network.type)
         
         return output
         
@@ -349,9 +363,17 @@ class Bush:
         lowPath = minPath
         highPath = maxPath
         
+        lowTT = self.getTT(0, lowPath)
+        highTT = self.getTT(0, highPath)
+        
+        #print("starting alg b shift", lowTT, highTT, lowPath, highPath)
+        
+        if highTT - lowTT < self.network.params.bush_gap:
+            return
+        
         '''
-        minPathTT = self.getTT(minPath)
-        maxPathTT = self.getTT(maxPath)
+        minPathTT = self.getTT(0, minPath)
+        maxPathTT = self.getTT(0, maxPath)
 
         if minPathTT < maxPathTT:
             lowPath = minPath
@@ -361,8 +383,13 @@ class Bush:
             highPath = minPath
         '''
         
+        
+        
         for ij in highPath:
             maxshift = min(maxshift, self.getFlow(ij))
+            
+        if maxshift < self.network.params.flow_epsilon:
+            return
         
         bot = 0
         top = maxshift
@@ -371,9 +398,8 @@ class Bush:
             #print(line_search_gap)
             mid = (top + bot)/2
             
-            check = self.getTT(lowPath) - self.getTT(highPath)
-            #print(mid * backwards)
-            #print("\t"+str(bot)+" "+str(top)+" "+str(mid)+" "+str(check))
+            check = self.getTT(mid, lowPath) - self.getTT(-mid, highPath)
+            #print("\t", check, bot, top, mid)
             
             if check < 0:
                 bot = mid
@@ -387,7 +413,7 @@ class Bush:
         for ij in highPath:
             self.addFlow(ij, -bot)
             
-        print("after algB shift:", bot, self.getTT(highPath) - self.getTT(lowPath))
+        #print("after algB shift:", bot, maxshift, self.getTT(0, highPath) - self.getTT(0, lowPath))
         
             
     def improveBush(self):
@@ -403,17 +429,17 @@ class Bush:
     
     def minUsedTree(self):
         for u in self.sorted:
-            u.cost = Params.INFTY
+            u.cost = Params.INFTY*1000
             u.pred = None
 
         self.origin.cost = 0
         
         for u in self.sorted:
-            for uv in u.getOutgoing(self):
+            for uv in u.outgoing:
                 if self.getFlow(uv) < self.network.params.flow_epsilon:
                     continue    
                 
-                v = uv.getDest()
+                v = uv.end
                 temp = uv.getTravelTime(uv.x, self.network.type) + u.cost
                 
                 if temp < v.cost:
@@ -424,7 +450,7 @@ class Bush:
         
         output = {}
         
-        for n in sorted:
+        for n in self.sorted:
         
             output[n] = n.pred
         
@@ -433,17 +459,17 @@ class Bush:
     
     def maxUsedTree(self):
         for u in self.sorted:
-            u.cost2 = Params.INFTY
+            u.cost2 = 0
             u.pred2 = None
 
         self.origin.cost2 = 0
         
         for u in self.sorted:
-            for uv in u.getOutgoing(self):
+            for uv in u.outgoing:
                 if self.getFlow(uv) < self.network.params.flow_epsilon:
                     continue    
                 
-                v = uv.getDest()
+                v = uv.end
                 temp = uv.getTravelTime(uv.x, self.network.type) + u.cost2
                 
                 if temp > v.cost2:
@@ -454,7 +480,7 @@ class Bush:
         
         output = {}
         
-        for n in sorted:
+        for n in self.sorted:
         
             output[n] = n.pred2
         
@@ -468,12 +494,13 @@ class Bush:
         output = []
         
         curr = j
-        #print(j)
+        #print("tracing", i, j)
         
         while curr != i:
-
+            if curr.pred == None:
+                return None
             output.append(curr.pred)
-            #print(output)
+            #print(curr, curr.pred, i, j, self.origin, output)
             curr = curr.pred.start
         
         return output
@@ -484,6 +511,8 @@ class Bush:
         curr = j
         
         while curr != i:
+            if curr.pred == None:
+                return None
             #print(str(curr)+" "+str(curr.pred2)+" "+str(i)+" "+str(j))
             output.append(curr.pred2)
             curr = curr.pred2.start
@@ -654,9 +683,9 @@ class Bush:
 
                             #print(l)
                             
-                            if newPAS != None:
+                            #if newPAS != None:
                                 #print(l.getReducedCost(self.network.type))
-                                print(newPAS.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type), newPAS.isCostEffective(self.network.type, self.network.params.pas_cost_mu))
+                                #print(newPAS.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type), newPAS.isCostEffective(self.network.type, self.network.params.pas_cost_mu))
                                 #print(self.getFlow(l))
                                 
                             #newPAS = None

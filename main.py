@@ -12,7 +12,7 @@ from src import Leblanc
 net = 'SiouxFalls'
 ins = 'SF_DNDP_10_1'
 
-network = Network.Network(net,ins,0.5,1e-0,1e-3)
+network = Network.Network(net,"",0.5,1e-0,1e-3)
 #network = Network.Network("grid3",1,1,1,1,1)
 print(net,ins)
 #print()

@@ -23,13 +23,13 @@ class Params:
 
         self.PRINT_PAS_INFO = False
         self.PRINT_BRANCH_INFO = False
-        self.PRINT_TAPAS_INFO = True
+        self.PRINT_TAPAS_INFO = False
         
         self.PRINT_TAP_ITER = True
 
         self.printBushEquilibrate = False
         self.printReducedCosts = False
     
-        self.warmstart = True
+        self.warmstart = False
     
     
