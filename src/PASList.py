@@ -31,7 +31,7 @@ class PASList:
     def remove(self, pas):
         ij = pas.getEndLinkBwd()
         
-        if ij in self.backward:
+        if ij in self.backward and pas in self.backward[ij]:
             self.backward[ij].remove(pas)
             
             if len(self.backward[ij]) == 0:
@@ -39,7 +39,7 @@ class PASList:
         
         ij = pas.getEndLinkFwd()
         
-        if ij in self.forward:
+        if ij in self.forward and pas in self.forward[ij]:
             self.forward[ij].remove(pas)
             
             if len(self.forward[ij]) == 0:

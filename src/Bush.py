@@ -303,8 +303,106 @@ class Bush:
     
     
     
-    '''def minUsedPath(self):
-        for u in self.network.nodes:
+    def algBShift(self):
+        minTree = self.minUsedPath()
+        maxTree = self.maxUsedPath()
+        
+        for s in self.network.zones:
+            if self.origin.getDemand(s) < self.network.params.flow_epsilon:
+                continue
+            
+            # find common node
+            minNodes = set()
+            curr = s
+            
+            while curr != None:
+                minNodes.add(curr)
+                curr = curr.pred.start
+                
+            curr = s
+            
+            while curr != None:
+                curr = curr.pred2.start
+                if curr in minNodes:
+                    break
+            
+            common = curr
+            
+            # trace back minpath and maxpath
+            minPath = self.tracePath(common, s)
+            maxPath = self.tracePath2(common, s)
+            
+                
+            # line search to equilibrate minpath and maxpath
+            self.flowShift(minPath, maxPath)
+    
+    def getTT(self, path):
+        output = 0
+        for ij in path:
+            output += ij.getTravelTime(ij.x, self.network.type)
+        
+        return output
+        
+    def flowShift(self, minPath, maxPath):
+        maxshift = 1.0e9
+        
+        lowPath = minPath
+        highPath = maxPath
+        
+        '''
+        minPathTT = self.getTT(minPath)
+        maxPathTT = self.getTT(maxPath)
+
+        if minPathTT < maxPathTT:
+            lowPath = minPath
+            highPath = maxPath
+        else:
+            lowPath = maxPath
+            highPath = minPath
+        '''
+        
+        for ij in highPath:
+            maxshift = min(maxshift, self.getFlow(ij))
+        
+        bot = 0
+        top = maxshift
+        #with open('flowShift3.txt', 'a') as file, contextlib.redirect_stdout(file):
+        while top - bot > self.network.params.line_search_gap:
+            #print(line_search_gap)
+            mid = (top + bot)/2
+            
+            check = self.getTT(lowPath) - self.getTT(highPath)
+            #print(mid * backwards)
+            #print("\t"+str(bot)+" "+str(top)+" "+str(mid)+" "+str(check))
+            
+            if check < 0:
+                bot = mid
+            
+            else:
+                top = mid
+        
+        for ij in lowPath:
+            self.addFlow(ij, bot)
+        
+        for ij in highPath:
+            self.addFlow(ij, -bot)
+            
+        print("after algB shift:", bot, self.getTT(highPath) - self.getTT(lowPath))
+        
+            
+    def improveBush(self):
+        self.minUsedTree()
+        
+        for ij in self.network.links:
+            if ij.getReducedCost() < 0:
+                # add link to bush
+                self.flow[ij] = 0
+        
+        self.removeCycles()
+            
+    
+    def minUsedTree(self):
+        for u in self.sorted:
             u.cost = Params.INFTY
             u.pred = None
 
@@ -312,16 +410,16 @@ class Bush:
         
         for u in self.sorted:
             for uv in u.getOutgoing(self):
-                if self.flow[uv] < self.network.params.flow_epsilon:
+                if self.getFlow(uv) < self.network.params.flow_epsilon:
                     continue    
                 
                 v = uv.getDest()
-                temp = uv.getTT() + u.cost
+                temp = uv.getTravelTime(uv.x, self.network.type) + u.cost
                 
                 if temp < v.cost:
                     v.cost = temp
                     v.pred = uv
-                    print(v.pred)
+                    #print(v.pred)
 
         
         output = {}
@@ -331,13 +429,42 @@ class Bush:
             output[n] = n.pred
         
         
-        return output'''
+        return output
     
+    def maxUsedTree(self):
+        for u in self.sorted:
+            u.cost2 = Params.INFTY
+            u.pred2 = None
+
+        self.origin.cost2 = 0
+        
+        for u in self.sorted:
+            for uv in u.getOutgoing(self):
+                if self.getFlow(uv) < self.network.params.flow_epsilon:
+                    continue    
+                
+                v = uv.getDest()
+                temp = uv.getTravelTime(uv.x, self.network.type) + u.cost2
+                
+                if temp > v.cost2:
+                    v.cost2 = temp
+                    v.pred2 = uv
+                    #print(v.pred2)
+
+        
+        output = {}
+        
+        for n in sorted:
+        
+            output[n] = n.pred2
+        
+        
+        return output
 
     
 
     
-    '''def tracePath(self, i, j):
+    def tracePath(self, i, j):
         output = []
         
         curr = j
@@ -346,10 +473,10 @@ class Bush:
         while curr != i:
 
             output.append(curr.pred)
-            print(output)
-            curr = curr.pred.getSource()
+            #print(output)
+            curr = curr.pred.start
         
-        return output'''
+        return output
     
     def tracePath2(self, i, j):
         output = []
