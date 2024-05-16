@@ -11,7 +11,7 @@ import math
 class Network:
 
     # construct this Network with the name; read files associated with network name
-    def __init__(self, name,B_prop,m,scal_time,scal_flow,timelimit):
+    def __init__(self,name,ins,B_prop,scal_time,scal_flow):
         self.nodes = [] 
         self.links = []
         self.zones = []
@@ -29,8 +29,8 @@ class Network:
         self.inf = 1e+9
         self.tol = 1e-2
         
-        self.readNetwork("data/"+name+"/net.txt",m,scal_time,scal_flow,timelimit)
-        self.readTrips("data/"+name+"/trips.txt",m,scal_time,scal_flow,timelimit)
+        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow,timelimit)
+        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow,timelimit)
         
         self.B = self.TC * B_prop # budget
         
@@ -42,7 +42,7 @@ class Network:
         self.type = type
         
     # read file "/net.txt"
-    def readNetwork(self, netFile,m,scal_time,scal_flow,timelimit):
+    def readNetwork(self,netFile,scal_time,scal_flow):
 
         
         firstThruNode = 1
@@ -57,10 +57,8 @@ class Network:
         
         while line.strip() != "<END OF METADATA>":
             line = file.readline()
-            if "<NUMBER OF ZONES>" in line:
-            
-                numZones = int(line[line.index('>') + 1:].strip());
-            
+            if "<NUMBER OF ZONES>" in line:            
+                numZones = int(line[line.index('>') + 1:].strip())            
             elif "<NUMBER OF NODES>" in line:
                 numNodes = int(line[line.index('>') + 1:].strip())
             elif "<NUMBER OF LINKS>" in line:
@@ -124,7 +122,7 @@ class Network:
             #print(self.links)
 
 
-    def readTrips(self, tripsFile,m,scal_time,scal_flow,timelimit):
+    def readTrips(self,tripsFile,scal_time,scal_flow):
 
         # **********
         # Exercise 5(d)
