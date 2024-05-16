@@ -289,9 +289,7 @@ class Network:
                     #print(f"this is v {v}")
                     #print(f"uv.x before {uv.x}")
                     tt = uv.getTravelTime(uv.x, type)
-                    #print(f"here is uv.x {uv.x}")
-                    #print(self.type)
-                    #print(f"this is tt {tt}")
+                    #print("\t\tadjust", uv, uv.x, tt, uv.start.cost, uv.end.cost)
                     if u.cost + tt < v.cost:
                         v.cost = u.cost + tt
                         v.pred = uv
@@ -485,11 +483,16 @@ class Network:
         self.allPAS = PASList.PASList()
         
     def tapas(self, type, y):
-        #self.resetTapas()
+        if not self.params.warmstart:
+            self.resetTapas()
+            
         self.setY(y)
         self.setType(type)
         
-        max_iter = 50
+        print(type)
+        print(y)
+        
+        max_iter = 100
         min_gap = 1E-3
         
         #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
@@ -514,9 +517,15 @@ class Network:
             for r in self.origins:
             
                 # remove all cyclic flows and topological sort
+                if self.params.PRINT_TAPAS_INFO:
+                    print("removing cycles", r)
+                    
                 r.bush.removeCycles()
                 # find tree of least cost routes
                             
+                if self.params.PRINT_TAPAS_INFO:
+                    print("checking for PAS", r)
+                                
                 r.bush.checkPAS()
                 # for every link used by the origin which is not part of the tree
                     # if there is an existing effective PAS
@@ -526,16 +535,23 @@ class Network:
                                     
                 # choose a random subset of active PASs
                 # shift flow within each chosen PAS
-                                
+                
+                if self.params.PRINT_TAPAS_INFO:
+                    print("starting branch shifts", r)
                 r.bush.branchShifts()
 
-                            
+                if self.params.PRINT_TAPAS_INFO:
+                    print("initial flow shifts", r)
+                              
                 for a in r.bush.relevantPAS.forward:
                     for p in r.bush.relevantPAS.forward[a]:
                         p.flowShift(self.type, self.params)
                         
                         # for every active PAS
-                        
+             
+            if self.params.PRINT_TAPAS_INFO:
+                print("general flow shifts")
+                               
             modified = False
             for shiftIter in range(0, self.params.tapas_equilibrate_iter):
                 # check if it should be eliminated
@@ -572,8 +588,8 @@ class Network:
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if (last_iter_gap - gap) / gap < 0.01:
-                    self.params.pas_cost_mu = max(self.params.pas_cost_mu/10, 1e-9)
-                    self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-9)
+                    #self.params.bush_gap = max(self.params.bush_gap/10, 1e-5)
+                    self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-7)
                     
                     if self.params.PRINT_TAPAS_INFO:
                         print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
@@ -637,7 +653,6 @@ class Network:
 
         for a in self.allPAS.forward:
             for p in self.allPAS.forward[a]:
-
                 if p.flowShift(self.type, self.params):
                     output = True
                     p.lastIterFlowShift = iter

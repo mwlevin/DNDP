@@ -26,7 +26,7 @@ class Bush:
         self.network = network
         self.flow = {}
         self.relevantPAS = []
-        self.sortted = list()
+        self.sorted = list()
         self.branches = []
         self.origin = origin 
         
@@ -96,7 +96,7 @@ class Bush:
             heapq.heappush(queue, self.origin.id)  # Assume each node has a unique node_id
             self.origin.visited = True
             
-            self.sortted = []
+            self.sorted = []
             idx = 0
             
             while queue:
@@ -106,7 +106,7 @@ class Bush:
                 #print(vertex_id)
                 vertex = self.network.findNode(vertex_id)  # You need to be able to fetch nodes by ID
                 #print(vertex)
-                self.sortted.append(vertex)
+                self.sorted.append(vertex)
                 vertex.top_order = idx
                 idx += 1
                 
@@ -142,14 +142,14 @@ class Bush:
         #print(queue.append(self.origin))
         #self.origin.visited = True
         
-        #self.sortted = list()
+        #self.sorted = list()
         #idx = 0
         #with open('output_topological.txt', 'w') as file, contextlib.redirect_stdout(file):
             #while len(queue) > 0:
                 #print(queue)
                 #vertex = queue.popleft()
                 #print(vertex)
-                #self.sortted.append(vertex)
+                #self.sorted.append(vertex)
                 #vertex.top_order = idx
                 #idx += 1
                 
@@ -246,7 +246,7 @@ class Bush:
         minPathTree = self.network.getSPTree(self.origin)
         
         for l in newlinks:
-            if l not in included and l.end != self.origin and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
+            if l not in included and l.end != self.origin and l.hasHighReducedCost(self.network.type, self.network.params.bush_gap):
                 #print(f"included is {included}")
                 #print(f"l.end is {l.end} and l.start is {l.start}")
                 #print(f"self.flow of l is {self.flow}")
@@ -277,6 +277,7 @@ class Bush:
                             self.savePAS(newPAS)
                             for ij in newPAS.backwardlinks:
                                 included.add(ij)
+                            newPAS.flowShift(self.network.type, self.network.params)
                             
                     else:
                         if self.network.params.PRINT_PAS_INFO:
@@ -309,7 +310,7 @@ class Bush:
 
         self.origin.cost = 0
         
-        for u in self.sortted:
+        for u in self.sorted:
             for uv in u.getOutgoing(self):
                 if self.flow[uv] < self.network.params.flow_epsilon:
                     continue    
@@ -325,7 +326,7 @@ class Bush:
         
         output = {}
         
-        for n in sortted:
+        for n in sorted:
         
             output[n] = n.pred
         
@@ -385,7 +386,7 @@ class Bush:
         self.origin.cost = 0
         
         
-        for u in self.sortted:
+        for u in self.sorted:
             
             for uv in u.getBushOutgoing(self):
                 v = uv.end
@@ -399,7 +400,7 @@ class Bush:
 
         output = {}
         
-        for n in self.sortted:
+        for n in self.sorted:
             output[n] = n.pred
         
         
@@ -409,9 +410,12 @@ class Bush:
     def branchShifts(self):
 
         for b in self.branches:
+            if self.network.params.PRINT_BRANCH_INFO:
+                print("shift branch with flow",self.getFlow(b.endlink))
+                
             if self.getFlow(b.endlink) > self.network.params.flow_epsilon:
                 b.init()
-                b.flowShift(type)
+                b.flowShift(self.network.type)
                 #print(b)
                 #return(b.flowShift())
             
@@ -423,7 +427,7 @@ class Bush:
     
     #def validateDemand(self):
 
-        #for s in self.sortted:
+        #for s in self.sorted:
             #print(s)
             #if s != self.origin and isinstance(s, self.Dest):
                 #d = self.origin.getDemand(s)
@@ -472,66 +476,92 @@ class Bush:
         
         # look for all used links not part of the tree of least cost routes
         # search in backwards topological order
-        with open('result171.txt', 'a') as file, contextlib.redirect_stdout(file):
-            for n in self.sortted[::-1]:
-                #print(n)
+        
+        
+        #for l in self.flow:
+            #print(l, self.origin, self.getFlow(l), l.getReducedCost(self.network.type), l.hasHighReducedCost(self.network.type, self.network.params.bush_gap))
             
-                #for l in n.incoming:
-                #print(f"n.incoming is {n.incoming}")
-                #for l in sorted(n.incoming, key=lambda l: (l.start.id, l.end.id)): 
-                for l in n.incoming:
-                    #print(sorted(n.incoming, key=lambda l: (l.start.id, l.end.id)))
-                    #print(f"l before {l}")
-                    #print(n.incoming)
-                    # check for links with high reduced cost and positive flow, not just links not on the shortest path
-                    if l not in included and l.end != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu):
-                        #print(f"included is {included}")
-                        #print(f"l.end is {l.end} and l.start is {l.start}")
-                        #print(f"self.flow of l is {self.flow}")
-                        #print(f"self.network.params.flow_epsilon is {self.network.params.flow_epsilon}")
-                        #print(f"the last thing {l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu)}")
-                        #print(l)
-                        #print(f"selforigin is {self.origin}")
-                        #System.out.println(l+" "+l.getDest().cost+" "+l.getSource().cost+" "+(l.getDest().cost-l.getSource().cost)+" "+l.getTT());
-                        # we need a PAS!
-                        if not self.hasRelevantPAS(l):
+        #with open('result171.txt', 'a') as file, contextlib.redirect_stdout(file):
+        for n in self.sorted[::-1]:
+            #print(n)
 
-                            # should check if we can borrow one from network
-                            fromNetwork = self.network.findPAS(l, self)
-                            if fromNetwork is None:
+            #for l in n.incoming:
+            #print(f"n.incoming is {n.incoming}")
+            #for l in sorted(n.incoming, key=lambda l: (l.start.id, l.end.id)): 
+            for l in n.incoming:
+                #print(sorted(n.incoming, key=lambda l: (l.start.id, l.end.id)))
+                #print(f"l before {l}")
+                #print(n.incoming)
+                
+                # check for links with high reduced cost and positive flow, not just links not on the shortest path
+                if l not in included and l.end != self.origin and self.getFlow(l) > self.network.params.flow_epsilon and l.hasHighReducedCost(self.network.type, self.network.params.bush_gap):
+                    #print(f"included is {included}")
+                    #print(f"l.end is {l.end} and l.start is {l.start}")
+                    #print(f"self.flow of l is {self.flow}")
+                    #print(f"self.network.params.flow_epsilon is {self.network.params.flow_epsilon}")
+                    #print(f"the last thing {l.hasHighReducedCost(self.network.type, self.network.params.pas_cost_mu)}")
+                    #print(l)
+                    #print(f"selforigin is {self.origin}")
+                    #System.out.println(l+" "+l.getDest().cost+" "+l.getSource().cost+" "+(l.getDest().cost-l.getSource().cost)+" "+l.getTT());
+                    # we need a PAS!
 
-                                if self.network.params.PRINT_PAS_INFO:
-                                    print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
+                    #print("link", l, self.origin, self.getFlow(l), l.getReducedCost(self.network.type), l.hasHighReducedCost(self.network.type, self.network.params.bush_gap))
 
-                                newPAS = None
+
+                    if not self.hasRelevantPAS(l):
+
+                        # should check if we can borrow one from network
+                        fromNetwork = self.network.findPAS(l, self)
+                        if fromNetwork is None:
+
+                            if self.network.params.PRINT_PAS_INFO:
+                                print("\nCreate PAS for " + str(l) + " for origin " + str(self.origin))
+
+                            newPAS = None
+
+                            if l.start != self.origin:
+                                newPAS = self.createPAS(minPathTree, l, max(self.network.params.flow_epsilon, self.getFlow(l) * self.network.params.pas_flow_mu))
+                            # this was causing a crash??
+                            #else:
+                            #    newPAS = self.createOriginLinkPAS(minPathTree, l)
+
+                            #print(l)
+                            
+                            if newPAS != None:
+                                #print(l.getReducedCost(self.network.type))
+                                print(newPAS.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type), newPAS.isCostEffective(self.network.type, self.network.params.pas_cost_mu))
+                                #print(self.getFlow(l))
                                 
+                            #newPAS = None
+                            
+                            if newPAS is None or not newPAS.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type) or not newPAS.isCostEffective(self.network.type, self.network.params.pas_cost_mu):
                                 if l.start != self.origin:
-                                    newPAS = self.createPAS(minPathTree, l, self.getFlow(l) * self.network.params.pas_flow_mu)
-                                # this was causing a crash??
-                                #else:
-                                #    newPAS = self.createOriginLinkPAS(minPathTree, l)
-                                    
-                                #print(l)
-                                if newPAS is None:
-                                    if l.start != self.origin:
-                                        # branch shift
-                                        if self.network.params.PRINT_PAS_INFO:
-                                            print("branch shift!")
+                                    # branch shift
+                                    if self.network.params.PRINT_BRANCH_INFO:
+                                        print("branch shift!")
 
-                                        branch = self.createBranch(l)
-                                        if branch is not None:
-                                            self.branches.append(branch)
+                                    branch = self.createBranch(l)
+                                    if branch is not None:
+                                        self.branches.append(branch)
+                                    else:
+                                        if self.network.params.PRINT_BRANCH_INFO:
+                                            print("branch is null")
 
-                                else:
-                                    self.savePAS(newPAS)
-                                    for ij in newPAS.backwardlinks:
-                                        included.add(ij)
                             else:
-                                if self.network.params.PRINT_PAS_INFO:
-                                    print("Take PAS for " + str(l))
+                                
+                                self.savePAS(newPAS)
+                                for ij in newPAS.backwardlinks:
+                                    included.add(ij)
+                        else:
+                            if self.network.params.PRINT_PAS_INFO:
+                                print("Take PAS for " + str(l))
 
-                                fromNetwork.addRelevantOrigin(self.origin)
-                                #print(self.origin)
+                            fromNetwork.addRelevantOrigin(self.origin)
+                            self.relevantPAS.add(fromNetwork)
+                            #print(self.origin)
+                    else:
+                        if self.network.params.PRINT_PAS_INFO:
+                            print("has relevant PAS already")
 
 
     
@@ -550,13 +580,13 @@ class Bush:
             if a in self.relevantPAS.forward:
                 #print(f"a is {a}")
                 for p in self.relevantPAS.forward[a]:
-                    if p.isCostEffective(a, self.network.params.pas_cost_mu) and p.isFlowEffective(type, self.network.params.pas_flow_mu):
+                    if p.isCostEffective(a, self.network.params.pas_cost_mu) and p.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type):
                         return True
             
             if a in self.relevantPAS.backward:
                 #print(a)     
                 for p in self.relevantPAS.backward[a]:
-                    if p.isCostEffective(a, self.network.params.pas_cost_mu) and p.isFlowEffective(type, self.network.params.pas_flow_mu):
+                    if p.isCostEffective(a, self.network.params.pas_cost_mu) and p.isFlowEffective(self.network.params.pas_flow_mu, self.network.params.pas_flow_mu * self.origin.getProductions(), self.network.type):
                         return True
                     
             return False
@@ -573,10 +603,13 @@ class Bush:
                 n.visited = False
                 n.pred2 = None
                 n.top_order = -1
+                
+                for l in n.incoming:
+                    l.visit_order = -1
             
             cycleDetected = False
             
-            sortted = list()
+            sorted = list()
             
             idx = len(self.network.nodes)-1
             
@@ -626,7 +659,7 @@ class Bush:
                 else:
                     node = n.node
                     if node.top_order < 0:
-                        sortted.append(node)
+                        sorted.append(node)
                         node.top_order = idx
                         idx -= 1
 
@@ -634,22 +667,37 @@ class Bush:
     def removeCycleAtNode(self, n):
         # n is the root node of the cycle
         
+        #for l in self.flow:
+        #    print(l, l.start.pred2)
+            
         list = []
         
         curr = n
         
+        
+        start_idx = 0
+        
+        idx = 0
+        #print(self.origin, self.flow)
         loopbreak = True
-        while loopbreak:
-            #print("\t"+str(curr)+" "+str(curr.pred2))
+        
+        while True:
+            
             pred = curr.pred2
-            #if pred is None:
-                #print(f"Error: Attempt to access 'start' attribute of None at node {curr}")
-                #break  #
-            list.append(pred)
             
-            curr = pred.start
-            
-            loopbreak = curr != n
+            if pred.visit_order >= 0:
+                start_idx = pred.visit_order
+                break
+            else:
+                pred.visit_order = idx
+                idx += 1
+                #if pred is None:
+                    #print(f"Error: Attempt to access 'start' attribute of None at node {curr}")
+                    #break  #
+                list.append(pred)
+
+                curr = pred.start
+           
             
         
         n.pred2 = None
@@ -658,7 +706,7 @@ class Bush:
         #print(maxflow)
         
         #with open('result119.txt', 'a') as file, contextlib.redirect_stdout(file):
-        for l in list:
+        for l in list[start_idx:]:
             maxflow = min(maxflow, self.getFlow(l))
             #print(f"maxflow is {maxflow}")
             #print(f"self.flow[l] is {self.flow[l]}")
@@ -666,7 +714,7 @@ class Bush:
         
         #print("removing "+str(maxflow)+" from "+str(list))
         #with open('result116.txt', 'a') as file, contextlib.redirect_stdout(file):
-        for l in list:
+        for l in list[start_idx:]:
             self.addFlow(l, -maxflow)
             #print(-maxflow)
 
@@ -791,10 +839,10 @@ class Bush:
             if self.network.params.PRINT_PAS_INFO:
                 print("PAS is "+str(output))
             
+            output.addRelevantOrigin(self.origin)
             #print(self.origin)
             return output
             
     def savePAS(self, pas):
-        pas.addRelevantOrigin(self.origin)
-             
         self.network.allPAS.add(pas)
+        self.relevantPAS.add(pas)

@@ -15,6 +15,9 @@ class Link:
         self.y = 1
         self.cost = cost # for DNDP
         
+        
+        self.visit_order = -1
+        
         if start is not None:
             start.addOutgoingLink(self)
             
@@ -88,3 +91,8 @@ class Link:
         
         return tt - reducedCost > tt*percent
  
+    def getReducedCost(self, type):
+        reducedCost = self.end.cost - self.start.cost
+        tt = self.getTravelTime(self.x, type)
+        #print(tt, reducedCost)
+        return tt - reducedCost

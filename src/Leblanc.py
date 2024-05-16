@@ -42,19 +42,19 @@ class Leblanc:
         fixed11 = copy.deepcopy(can.fixed1)
         fixed11.append(can.ybr)
         
-        cnt = len(self.nodes) 
-        print(self.nodes,cnt)
+        cnt = len(self.BB_nodes) 
+        print(self.BB_nodes,cnt)
         
         BB_node_id = cnt+1
         can.children.append(BB_node_id)
         n0 = BB_node.BB_node(self.network, BB_node_id, can.id, can.LB, self.inf, fixed00, fixed01)
-        self.nodes.append(n0)
+        self.BB_nodes.append(n0)
         
         BB_node_id = cnt+2
         can.children.append(BB_node_id)
         n1 = BB_node.BB_node(self.network, BB_node_id, can.id, can.LB, can.UB, fixed10, fixed11)
         n1.solved = True
-        self.nodes.append(n1)
+        self.BB_nodes.append(n1)
     
         return     
 
@@ -163,6 +163,9 @@ class Leblanc:
                 gap = self.getGap()
             
             print('==> %d\t%d\t%d\t%.1f\t%.1f\t%.2f' % (nBB,nSO,nUE,self.LB,self.UB,gap))
+            
+            if nBB==3:
+                return
             
             if gap <= self.tol:
                 conv = True

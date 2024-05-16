@@ -19,7 +19,6 @@ network = Network.Network("SiouxFalls",0.5,500,1e-0,1e-3,600)
 #print()
 
 
-
 y1 = {ij:1 for ij in network.links2}
 y0 = {ij:0 for ij in network.links2}
 l0 = {ij:0 for ij in network.links2}
@@ -30,21 +29,23 @@ x0 = {ij:0 for ij in network.links2}
 #---arbitrary (nonzero) lambda
 #lbd = {(i,j):1 for (i,j) in network.links2}
 
-print(network.tapas('UE', y0))
+y1[network.findLink(network.findNode(11), network.findNode(150))] = 0
+
+#print(network.tapas('SO', y1))
 
 
 
 
 
-print(network.tapas('UE', y1))
+#print(network.tapas('SO', y1))
 
-for ij in network.links2:
-    print(ij, ij.x)
+#for ij in network.links2:
+#    print(ij, ij.x)
 
 
 
-#timelimit = 600
+timelimit = 600
 
-#leblanc = Leblanc.Leblanc(network, timelimit)
+leblanc = Leblanc.Leblanc(network, timelimit)
 
-#leblanc.BB()
+leblanc.BB()
