@@ -29,8 +29,8 @@ class Network:
         self.inf = 1e+9
         self.tol = 1e-2
         
-        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow,timelimit)
-        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow,timelimit)
+        self.readNetwork("data/"+name+"/"+ins+".txt",scal_time,scal_flow)
+        self.readTrips("data/"+name+"/trips.txt",scal_time,scal_flow)
         
         self.B = self.TC * B_prop # budget
         
