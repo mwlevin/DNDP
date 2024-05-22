@@ -25,12 +25,15 @@ class PAS:
     def addRelevantOrigin(self, r):
         self.relevant.add(r)
         #print(r)
+        #print(r)
         r.bush.relevantPAS.add(self)
     
     def getTT(self, topshift, type):
         output = 0
         #with open('getTT5.txt', 'a') as file, contextlib.redirect_stdout(file):
+        #with open('getTT5.txt', 'a') as file, contextlib.redirect_stdout(file):
         for l in self.forwardlinks:
+            #print(f"self.forwardlinks {self.forwardlinks}")
             #print(f"self.forwardlinks {self.forwardlinks}")
             output += l.getTravelTime(l.x + topshift, type)
             #output += l.getTravelTime(l.x, type)
@@ -38,6 +41,7 @@ class PAS:
             
         for l in self.backwardlinks:
             output -= l.getTravelTime(l.x - topshift, type)
+            #print(output)
             #print(output)
         
         return output
@@ -52,6 +56,12 @@ class PAS:
         return self.forwardlinks[0]
     
     def getEndLinkBwd(self):
+        #with open('result175.txt', 'a') as file, contextlib.redirect_stdout(file):
+            answer = self.backwardlinks[-1]
+            #print(self.backwardlinks)
+            #print(answer)
+            return self.backwardlinks[-1]
+        
         #with open('result175.txt', 'a') as file, contextlib.redirect_stdout(file):
             answer = self.backwardlinks[-1]
             #print(self.backwardlinks)
@@ -178,26 +188,15 @@ class PAS:
     
     
     def maxBackwardFlowShift(self):
-        #with open('result139.txt', 'a') as file, contextlib.redirect_stdout(file):
-            maxFlowPerBush = {}
-            #sorted_relevant = sorted(self.relevant, key=lambda r: r.id)
-            
-            #print(f"before sorting {self.relevant}")
-            #print(self.relevant)
-            #for r in sorted(self.relevant, key=lambda r: r.id):
-            for r in self.relevant:
-                #print(self.forwardlinks, self.backwardlinks, sorted(self.relevant, key=lambda r: r.id))
-                #print(f"r.id is {r.id}")
-                #print(f"r is {r}")
-                maxFlowPerBush[r.bush] = self.maxBackwardBushFlowShift(r.bush)
-                #print(maxFlowPerBush[r.bush])
-
-            return maxFlowPerBush
+        
+        maxFlowPerBush = {}
+        
+        for r in self.relevant:
+            maxFlowPerBush[r.bush] = self.maxBackwardBushFlowShift(r.bush)
+        
+        
+        return maxFlowPerBush
     
-
-
-
-
     def flowShift(self, type, cost_mu, flow_mu, line_search_gap):
         
         forwardcost = self.getForwardCost(type)
@@ -277,28 +276,16 @@ class PAS:
 
     #with open('result132.txt', 'a') as file, contextlib.redirect_stdout(file):
         for l in self.forwardlinks:
-
-            #for r in sorted(self.relevant, key=lambda x: x.id):
             for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
                 start_time11 = time.time()
                 r.bush.addFlow(l, maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
-                end_time11 = time.time()
-                self.time_addFlowPAS += (end_time11 - start_time11)
-                #print(f"maxFlowShift[r.bush] {maxFlowShift[r.bush]}")
-                #print(f"overallMaxShift is {overallMaxShift}")
-                #print(f"The bot is {bot}")
-                #print(f"The backwards is {backwards}")
-        
+            
         
         
         for l in self.backwardlinks:
-            #for r in sorted(self.relevant, key=lambda x: x.id):
             for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
-                #print(-maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
-                #print(f'-maxFlowShift[r.bush] {-maxFlowShift[r.bush]}, overallMaxShift {overallMaxShift},bot{bot},backwards{backwards}')
-                start_time12 = time.time()
                 r.bush.addFlow(l, -maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
                 end_time12 = time.time()
                 self.time_addFlowPAS+= (end_time12 - start_time12)

@@ -1,4 +1,5 @@
 import contextlib
+import contextlib
 from src import Node
 from src import Link
 from src import Path
@@ -75,6 +76,7 @@ class Network:
         numLinks = 0
         newLinks = 0
         #with open('result8.txt', 'a') as file, contextlib.redirect_stdout(file):
+        #with open('result8.txt', 'a') as file, contextlib.redirect_stdout(file):
         file = open(netFile, "r")
 
         line = ""
@@ -109,11 +111,15 @@ class Network:
 
         line = ""
         id = 0
+        id = 0
         while len(line) == 0:
             line = file.readline().strip()
         #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
+        #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
         for i in range(0, numLinks + newLinks):
             line = file.readline().split()
+            if len(line) == 0:
+                continue
             if len(line) == 0:
                 continue
             start = self.nodes[int(line[0]) - 1]
@@ -132,7 +138,12 @@ class Network:
             link = Link.Link(id, start ,end, t_ff, C, alpha, beta, cost)
             id = id +1
             #print(start,end)
+            #with open('result5.txt', 'w') as file, contextlib.redirect_stdout(file):
+            link = Link.Link(id, start ,end, t_ff, C, alpha, beta, cost)
+            id = id +1
+            #print(start,end)
             self.links.append(link)
+            #print(self.links)
             #print(self.links)
             
             if i > numLinks:
@@ -141,7 +152,16 @@ class Network:
             #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
             #print(f"Start Node: {start}, End Node: {end}")
             #print(link)
+            #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
+            #print(f"Start Node: {start}, End Node: {end}")
+            #print(link)
         file.close()
+
+        #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
+            #print(start,end)
+            #print(self.links)
+
+
 
         #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
             #print(start,end)
@@ -174,8 +194,14 @@ class Network:
         
         splitted = lines[line_idx].split()
         #print(splitted)
+        #print(splitted)
         
         while len(lines) < line_idx or idx < len(splitted):
+            #print(line_idx)
+            #print(idx)
+            #print(len(lines))This is the total number of line
+            #print()
+        #while lines < len(line_idx) or idx < len(splitted):
             #print(line_idx)
             #print(idx)
             #print(len(lines))This is the total number of line
@@ -184,10 +210,14 @@ class Network:
 
             next = splitted[idx]
             #print(next)
+            #print(next)
             if next == "Origin":
+                
                 
                 idx += 1
                 r = self.zones[int(splitted[idx]) - 1]
+
+                #print(int(splitted[idx]))
 
                 #print(int(splitted[idx]))
             else:
@@ -196,7 +226,14 @@ class Network:
                 #print(f"idx: {idx}, splitted[idx]: {splitted[idx]}")
                 #print(f"Length of self.zones: {len(self.zones)}")
                 #print(int(splitted[idx]) - 1)
+                #print(int(splitted[idx]))
+                #print(line)
+                #print(f"idx: {idx}, splitted[idx]: {splitted[idx]}")
+                #print(f"Length of self.zones: {len(self.zones)}")
+                #print(int(splitted[idx]) - 1)
                 s = self.zones[int(splitted[idx]) - 1]
+
+                #print(s)
 
                 #print(s)
                 idx += 2
@@ -209,7 +246,12 @@ class Network:
 
             #if [int(splitted[idx]) - 1] != 343:
 
+
+
+            #if [int(splitted[idx]) - 1] != 343:
+
             idx += 1
+
 
             if idx >= len(splitted):
                 line_idx += 1
@@ -254,6 +296,7 @@ class Network:
 
     # find the node with the smallest cost (node.cost)
     def argmin1(self, set):
+    def argmin1(self, set):
         best = None
         min = float("inf")
 
@@ -280,11 +323,13 @@ class Network:
 
     def dijkstras(self, origin):
         #with open('result69.txt', 'a') as file, contextlib.redirect_stdout(file):
+        #with open('result69.txt', 'a') as file, contextlib.redirect_stdout(file):
         
             for n in self.nodes:
                 n.cost = 1E9
                 n.pred = None
 
+            origin.cost = 0.0
             origin.cost = 0.0
 
             Q = Heap.Heap()
@@ -309,11 +354,13 @@ class Network:
     def trace(self, r, s):
         curr = s
         #print(f"s is {s}")
+        #print(f"s is {s}")
 
         output = Path.Path()
         
         while curr != r and curr is not None:
             ij = curr.pred
+            #print(ij)
             #print(ij)
 
             if ij is not None:
@@ -326,13 +373,27 @@ class Network:
         #with open('trace8.txt', 'a') as file, contextlib.redirect_stdout(file):
             curr = s
             #print(s)
+        #with open('trace8.txt', 'a') as file, contextlib.redirect_stdout(file):
+            curr = s
+            #print(s)
 
             output = []
             #with open('trace4.txt', 'a') as file, contextlib.redirect_stdout(file):
             while curr != r and curr is not None:
                 ij = tree[curr]
                 #print(ij)
+            output = []
+            #with open('trace4.txt', 'a') as file, contextlib.redirect_stdout(file):
+            while curr != r and curr is not None:
+                ij = tree[curr]
+                #print(ij)
 
+                if ij is not None:
+                    output.append(ij)
+                    #print(output)
+                    curr = ij.start
+            
+            return output
                 if ij is not None:
                     output.append(ij)
                     #print(output)
@@ -354,6 +415,7 @@ class Network:
             if n != r and n.cost < self.params.INFTY:
                 output[n] = n.pred
                 
+                
 
         
         return output
@@ -362,6 +424,12 @@ class Network:
     def getTSTT(self):
         output = 0.0
         for ij in self.links:
+            tt = ij.getTravelTime(ij.x, self.type)
+            output += ij.x * tt
+            #print(ij.x)
+            #print(str(link)+ "\t" + ij, 'flow'+ "\t" +ij.x,'travel time'+ "\t" +tt, 'free flow travel time'+ "\t" +ij.t_ff, 'alpha'+ "\t" +ij.alpha, 'beta'+ "\t" +ij.beta, ij.C)
+            #print('link: {}\tflow: {}\ttravel time: {}\tfree flow travel time: {}\talpha: {}\tbeta: {}\tC: {}'.format(str(ij), ij.x, tt, ij.t_ff, ij.alpha, ij.beta, ij.C))
+
             tt = ij.getTravelTime(ij.x, self.type)
             output += ij.x * tt
             #print(ij.x)
@@ -405,6 +473,7 @@ class Network:
     # find the step size for the given iteration number
     def calculateStepsize(self, iteration):
         return 1.0 / iteration
+        #print(1.0 / iteration)
         #print(1.0 / iteration)
 
 
@@ -465,6 +534,7 @@ class Network:
         min_gap = 1E-4
         
         #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
+        #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
         
         last_iter_gap = 1
@@ -474,7 +544,14 @@ class Network:
         
     #with open('output_tapas21.txt', 'w') as file, contextlib.redirect_stdout(file):
     #with open('output_tapas11.txt', 'w') as file:
+        
+    #with open('output_tapas21.txt', 'w') as file, contextlib.redirect_stdout(file):
+    #with open('output_tapas11.txt', 'w') as file:
         for iter in range(1, max_iter+1):
+                        
+            #custom_x = {link: link.x for link in self.links}
+            #print(custom_x)
+            
                         
             #custom_x = {link: link.x for link in self.links}
             #print(custom_x)
@@ -483,6 +560,7 @@ class Network:
             for r in self.zones:
                 if r.bush is None:
                     continue
+            
             
                 # remove all cyclic flows and topological sort
                 start_time17 = time.time()
@@ -501,8 +579,10 @@ class Network:
                     # else
                         # construct a new PAS    
                                     
+                                    
                 # choose a random subset of active PASs
                 # shift flow within each chosen PAS
+                                
                                 
                 r.bush.branchShifts()
 
@@ -525,10 +605,12 @@ class Network:
                 self.time_equilibratePAS += (end_time15-start_time15)
                 # redistribute flows between origins by the proportionality condition
                             
+                            
                 # in the case that no flow shifting occurred, do not try to equilibrate more
                 if not modified:
                     break
 
+                            
                             
             tstt = self.getTSTT()
             sptt = self.getSPTT()
@@ -541,7 +623,17 @@ class Network:
                         #print(str(iter)+"\tGap: "+str(gap)+"\tAEC: "+str(aec))  # Example print, redirected to file
                             
 
+                        
+                        #with open('output_tapas.txt', 'w') as file, contextlib.redirect_stdout(file):
+                        
+                            # The rest of your original code here...
+                        #print(str(iter)+"\tGap: "+str(gap)+"\tAEC: "+str(aec))  # Example print, redirected to file
+                            
+
             print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+                
+                #printLinkFlows();
+                
                 
                 #printLinkFlows();
                 
@@ -549,10 +641,19 @@ class Network:
                 break
                 
                 
+                
+                
             # there's an issue where PAS are labeled as not cost effective because the difference in cost is small, less than 5% of the reduced cost
             # for low network gaps, this is causing PAS to not flow shift
             # when the gap is low, increase the flow shift sensitivity
             if (last_iter_gap - gap) / gap < 0.01:
+                    self.params.pas_cost_mu = max(self.params.pas_cost_mu/10, 1e-9)
+                    self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-9)
+                    
+                    if self.params.PRINT_TAPAS_INFO:
+                        print("Adjusting parameters due to small gap "+str(self.params.pas_cost_mu)+" "+str(self.params.line_search_gap))
+                        
+            
                     self.params.pas_cost_mu = max(self.params.pas_cost_mu/10, 1e-9)
                     self.params.line_search_gap = max(self.params.line_search_gap/10, 1e-9)
                     
