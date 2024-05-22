@@ -10,7 +10,7 @@ class Zone(Node.Node):
         self.totaldemand = 0
         self.thruNode = True
         self.bush = None
-    
+        self.heap_idx = -1
 
     # adds the specified demand to an internal data structure for the demand from this node to the destination
     def addDemand(self, dest, dem):

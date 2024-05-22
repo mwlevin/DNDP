@@ -8,6 +8,9 @@
 from src import Params
 import contextlib
 from src import Network
+import time
+
+start_time18 = time.time()
 class PAS:
     def __init__(self):
         self.forwardlinks = []
@@ -17,6 +20,7 @@ class PAS:
         self.lastIterFlowShift = 0
         self.start = None
         self.end = None
+        self.time_addFlowPAS = 0
     
     def addRelevantOrigin(self, r):
         self.relevant.add(r)
@@ -101,7 +105,7 @@ class PAS:
         
         return backwardcost
     
-    
+
     def isFlowEffective(self, type, flow_mu):
         # min flow of high cost segment
         # high cost segment is backwards links
@@ -127,6 +131,9 @@ class PAS:
         
         return minflow >= flow_mu * flowlastsegment
         
+  
+
+
     def maxForwardBushFlowShift(self, bush):
         max = 1E9
         #with open('forwardBush4.txt', 'a') as file, contextlib.redirect_stdout(file):
@@ -177,7 +184,8 @@ class PAS:
             
             #print(f"before sorting {self.relevant}")
             #print(self.relevant)
-            for r in sorted(self.relevant, key=lambda r: r.id):
+            #for r in sorted(self.relevant, key=lambda r: r.id):
+            for r in self.relevant:
                 #print(self.forwardlinks, self.backwardlinks, sorted(self.relevant, key=lambda r: r.id))
                 #print(f"r.id is {r.id}")
                 #print(f"r is {r}")
@@ -186,6 +194,10 @@ class PAS:
 
             return maxFlowPerBush
     
+
+
+
+
     def flowShift(self, type, cost_mu, flow_mu, line_search_gap):
         
         forwardcost = self.getForwardCost(type)
@@ -217,7 +229,7 @@ class PAS:
         if backwards > 0:
             #print(backwards)
             maxFlowShift = self.maxBackwardFlowShift()
-        
+            #overallMaxShift += maxFlowShift[b]
         else:
             maxFlowShift = self.maxForwardFlowShift()
         
@@ -266,9 +278,13 @@ class PAS:
     #with open('result132.txt', 'a') as file, contextlib.redirect_stdout(file):
         for l in self.forwardlinks:
 
-            for r in sorted(self.relevant, key=lambda x: x.id):
+            #for r in sorted(self.relevant, key=lambda x: x.id):
+            for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
+                start_time11 = time.time()
                 r.bush.addFlow(l, maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
+                end_time11 = time.time()
+                self.time_addFlowPAS += (end_time11 - start_time11)
                 #print(f"maxFlowShift[r.bush] {maxFlowShift[r.bush]}")
                 #print(f"overallMaxShift is {overallMaxShift}")
                 #print(f"The bot is {bot}")
@@ -277,11 +293,15 @@ class PAS:
         
         
         for l in self.backwardlinks:
-            for r in sorted(self.relevant, key=lambda x: x.id):
+            #for r in sorted(self.relevant, key=lambda x: x.id):
+            for r in self.relevant:
                 # proportion allocated to bush is bush max shift / total max shift
                 #print(-maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
                 #print(f'-maxFlowShift[r.bush] {-maxFlowShift[r.bush]}, overallMaxShift {overallMaxShift},bot{bot},backwards{backwards}')
+                start_time12 = time.time()
                 r.bush.addFlow(l, -maxFlowShift[r.bush] / overallMaxShift * bot * backwards)
+                end_time12 = time.time()
+                self.time_addFlowPAS+= (end_time12 - start_time12)
             
         #print(self.getForwardCost(type), self.getBackwardCost(type), self.getForwardCost(type)-self.getBackwardCost(type))
         #print(bot, overallMaxShift)
@@ -289,3 +309,7 @@ class PAS:
         #print("after shift "+str(bot)+" "+str(self.getTT(0, type)))
         
         return True
+
+
+
+

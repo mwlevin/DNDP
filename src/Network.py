@@ -7,6 +7,8 @@ from src import Bush
 from src import Params
 from src import PASList
 import math
+import time
+from src import Heap
 
 class Network:
 
@@ -16,7 +18,7 @@ class Network:
         self.links = []
         self.zones = []
         
-        self.links2 = []
+        self.links2 = {}
         self.type = 'UE'
         self.TD = 0
         self.TC = 0 # total cost
@@ -25,6 +27,29 @@ class Network:
         self.allPAS = PASList.PASList()
         
         
+
+        self.time_isFlowEffective = 0
+        self.time_flowShift = 0
+        self.time_wholePAS = 0
+        self.time_loadDemand = 0
+        self.time_tracePathSet = 0
+        self.time_minPath = 0
+        self.time_addFlow = 0
+        self.time_checkPAS = 0
+        self.time_hasRelevantPAS = 0
+        self.time_removeCycles = 0
+        self.time_removeCycleAtNode = 0
+        self.time_createPAS = 0
+        self.time_wholeBush = 0
+        self.time_dijkstra = 0
+        self.time_tapas = 0
+        self.time_findPAS = 0
+        self.time_equilibratePAS = 0
+        self.time_removePAS = 0
+        self.time_wholeNetwork = 0
+        self.time_tapas = 0
+
+
         self.inf = 1e+9
         self.tol = 1e-2
         
@@ -110,8 +135,8 @@ class Network:
             self.links.append(link)
             #print(self.links)
             
-            if i >= numLinks:
-                self.links2.append(link)
+            if i > numLinks:
+                self.links2[(start, end)] = link
             
             #with open('result6.txt', 'a') as file, contextlib.redirect_stdout(file):
             #print(f"Start Node: {start}, End Node: {end}")
@@ -176,7 +201,7 @@ class Network:
                 #print(s)
                 idx += 2
                 next = splitted[idx]
-                d = float(next[0:len(next) - 1]) * scal_flow
+                d = float(next[0:len(next) - 1]) * scal_flow 
                 
                 r.addDemand(s, d)
                 self.TD += d
@@ -251,53 +276,36 @@ class Network:
         cost, node = min((n.cost, n) for n in set)
         return node
 
-    def dijkstras(self, origin, type):
+
+
+    def dijkstras(self, origin):
         #with open('result69.txt', 'a') as file, contextlib.redirect_stdout(file):
         
             for n in self.nodes:
-                n.cost = Params.INFTY
+                n.cost = 1E9
                 n.pred = None
 
             origin.cost = 0.0
 
-            Q = {origin}
+            Q = Heap.Heap()
+            Q.insert(origin)
             #print(f"This is Q {Q}")
 
-            while len(Q) > 0:
+            while Q.size() > 0:
 
-                u = self.argmin(Q)
-                #print(f"This is u {u}")
-                Q.remove(u)
-                #outgoing_edges = sortted(u.outgoing, key=lambda e: (e.start.id, e.end.id))
-                #outgoing_edges_list = list(u.outgoing)
-                #outgoing_edges_list.sort(key=lambda e: (e.start.id, e.end.id))
-                #for u in sortted:
+                #u = self.argmin(Q)
+                u = Q.removeMin()
 
-
-                #for uv in sorted(u.outgoing, key=lambda edge: (edge.end.id, edge.start.id)):
                 for uv in u.outgoing:
-                #for uv in u.outgoing:
-                      # This will print all the properties and methods of the 'Zone' object
-                    #break 
                     v = uv.end
+                    tt = uv.getTravelTime(uv.x, self.type)
 
-                    #print(f"this is v {v}")
-                    #print(f"uv.x before {uv.x}")
-                    tt = uv.getTravelTime(uv.x, type)
-                    #print(f"here is uv.x {uv.x}")
-                    #print(self.type)
-                    #print(f"this is tt {tt}")
                     if u.cost + tt < v.cost:
                         v.cost = u.cost + tt
                         v.pred = uv
-                        #print(v.pred)
 
                         if v.isThruNode():
-                            Q.add(v)
-            
-    
-
-
+                            Q.insert(v)
     def trace(self, r, s):
         curr = s
         #print(f"s is {s}")
@@ -333,12 +341,17 @@ class Network:
             return output
 
     def getSPTree(self, r):
-        self.dijkstras(r, self.type)
         
+        start_time2 = time.time()
+        self.dijkstras(r)
+        end_time2 = time.time()
+        #print(f"Time taken for dijkstra: {end_time2 - start_time2} seconds")
+        self.time_dijkstra += (end_time2 - start_time2)
+
         output = {}
         
         for n in self.nodes:
-            if n != r and n.cost < Params.INFTY:
+            if n != r and n.cost < self.params.INFTY:
                 output[n] = n.pred
                 
 
@@ -346,10 +359,10 @@ class Network:
         return output
     
     # returns the total system travel time
-    def getTSTT(self, type):
+    def getTSTT(self):
         output = 0.0
         for ij in self.links:
-            tt = ij.getTravelTime(ij.x, type)
+            tt = ij.getTravelTime(ij.x, self.type)
             output += ij.x * tt
             #print(ij.x)
             #print(str(link)+ "\t" + ij, 'flow'+ "\t" +ij.x,'travel time'+ "\t" +tt, 'free flow travel time'+ "\t" +ij.t_ff, 'alpha'+ "\t" +ij.alpha, 'beta'+ "\t" +ij.beta, ij.C)
@@ -358,13 +371,17 @@ class Network:
         return output
 
     # returns the total system travel time if all demand is on the shortest path
-    def getSPTT(self, type):
+    def getSPTT(self):
         output = 0.0
 
         for r in self.zones:
             if r.getProductions() > 0:
-                self.dijkstras(r, type)
-
+                start_time3 = time.time()
+                self.dijkstras(r)
+                end_time3 = time.time()
+                self.time_dijkstra += (end_time3 - start_time3)
+                #print(f"Time taken for dijkstra: {self.time_dijkstra} seconds")
+                #print(f"Time taken for dijkstra: {end_time3 - start_time3} seconds")
                 for s in self.zones:
                     if r.getDemand(s) > 0:
                         output += r.getDemand(s) * s.cost
@@ -401,21 +418,21 @@ class Network:
     def calculateAON(self):
         for r in self.zones:
             if r.getProductions() > 0:
-                self.dijkstras(r, self.type)
-
+                start_time4 = time.time()
+                self.dijkstras(r)
+                end_time4 = time.time()
+                self.time_dijkstra += (end_time4 - start_time4)
+                #print(f"Time taken for dijkstra: {self.time_dijkstra} seconds")
                 for s in self.zones:
                     if r.getDemand(s) > 0:
                         pi_star = self.trace(r, s)
                         pi_star.addHstar(r.getDemand(s))
 
-    def setY(self, y):
-        for ij in self.links2:
-            ij.y = y[ij]
 
-    def msa(self, type, y):
-        self.setY(y)
+    def msa(self, type, lbd, y, xinit):
+
         self.setType(type)
-        max_iteration = 500
+        max_iteration = 1000
         
         for ij in self.links:
             i = ij.start
@@ -423,8 +440,8 @@ class Network:
             if (i,j) in y:            
                 ij.setlbdCost(lbd[(i,j)]*y[(i,j)] + self.inf*(1 - y[(i,j)]))
         
-        if self.params.PRINT_TAP_ITER:
-            print("Iteration\tTSTT\tSPTT\tgap\tAEC")
+        
+        output = "Iteration\tAEC\n"
         
         
         
@@ -435,40 +452,21 @@ class Network:
             
             self.calculateNewX(stepsize)
             
-            tstt = self.getTSTT(self.type)
-            sptt = self.getSPTT(self.type)
-            gap = (tstt - sptt)/tstt
-            aec = (tstt - sptt)/self.TD
-            
-            if self.params.PRINT_TAP_ITER:
-                print(str(iteration)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+            output += str(iteration) + "\t" + str(self.getAEC()) + "\n"
         
-        return self.getTSTT('UE')
-        
-    def resetTapas(self):
-        for r in self.zones:
-            r.bush = None
-            
-        for ij in self.links:
-            ij.x = 0
-            
-        self.params = Params.Params()
-        
-        self.allPAS = PASList.PASList()
-        
-    def tapas(self, type, y):
-        self.resetTapas()
-        self.setY(y)
+        return self.getLx(lbd, y), self.getXDict(), self.getTSTT()
+
+
+    #start_time3 = time.time() 
+    def tapas(self, type, lbd, y, xinit):
         self.setType(type)
         
-        max_iter = 500
+        max_iter = 50
         min_gap = 1E-4
         
         #self.params.line_search_gap = pow(10, math.floor(math.log10(self.TD) - 6))
         
-        if self.params.PRINT_TAP_ITER:
-            print("Iteration\tTSTT\tSPTT\tgap\tAEC")
-            
+        
         last_iter_gap = 1
         
         for r in self.zones:
@@ -487,10 +485,16 @@ class Network:
                     continue
             
                 # remove all cyclic flows and topological sort
+                start_time17 = time.time()
                 r.bush.removeCycles()
+                end_time17 = time.time()
+                self.time_removeCycles += (end_time17 -  start_time17)
                 # find tree of least cost routes
-                            
+
+                start_time14 = time.time()
                 r.bush.checkPAS()
+                end_time14 = time.time()
+                self.time_checkPAS += (end_time14 - start_time14)
                 # for every link used by the origin which is not part of the tree
                     # if there is an existing effective PAS
                         # make sure the origin is listed as relevant
@@ -502,11 +506,12 @@ class Network:
                                 
                 r.bush.branchShifts()
 
-                            
+                start_time16 = time.time()            
                 for a in r.bush.relevantPAS.forward:
                     for p in r.bush.relevantPAS.forward[a]:
                         p.flowShift(self.type, self.params.pas_cost_mu, self.params.pas_flow_mu, self.params.line_search_gap)
-                        
+                end_time16 = time.time()
+                self.time_flowShift += (end_time16-start_time16)
                         # for every active PAS
                         
             modified = False
@@ -514,7 +519,10 @@ class Network:
                 # check if it should be eliminated
                 self.removePAS(iter)
                 # perform flow shift to equilibrate costs
+                start_time15 = time.time()
                 modified = self.equilibratePAS(iter)
+                end_time15 = time.time()
+                self.time_equilibratePAS += (end_time15-start_time15)
                 # redistribute flows between origins by the proportionality condition
                             
                 # in the case that no flow shifting occurred, do not try to equilibrate more
@@ -522,8 +530,8 @@ class Network:
                     break
 
                             
-            tstt = self.getTSTT(type)
-            sptt = self.getSPTT(type)
+            tstt = self.getTSTT()
+            sptt = self.getSPTT()
             gap = (tstt - sptt)/tstt
             aec = (tstt - sptt)/self.TD
                         
@@ -532,8 +540,8 @@ class Network:
                             # The rest of your original code here...
                         #print(str(iter)+"\tGap: "+str(gap)+"\tAEC: "+str(aec))  # Example print, redirected to file
                             
-            if self.params.PRINT_TAP_ITER:
-                print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
+
+            print(str(iter)+"\t"+str(tstt)+"\t"+str(sptt)+"\t"+str(gap)+"\t"+str(aec))
                 
                 #printLinkFlows();
                 
@@ -553,10 +561,10 @@ class Network:
                         
             
             last_iter_gap = gap
+                
+    #end_time3 = time.time()
+    #print(f"Time taken for tapas: {end_time3 - start_time3} seconds")
             
-        return self.getTSTT('UE')
-                
-                
     def getLx(self, lbd, y):
         Lx = 0
         for ij in self.links:
@@ -575,7 +583,9 @@ class Network:
     #        output[(ij.start, ij.end)] = ij.x
     #        print(ij.x)
     #    return output
-        
+
+
+    #start_time4 = time.time()    
     def findPAS(self, ij, bush):
         
         if not self.allPAS.containsKey(ij):
@@ -602,8 +612,10 @@ class Network:
         
         return best
         
-        
-        
+    #end_time4 = time.time()
+    #print(f"Time taken for findPAS: {end_time4 - start_time4} seconds")
+    
+    #start_time5 = time.time()
     def equilibratePAS(self, iter):
         output = False
         
@@ -616,8 +628,10 @@ class Network:
                     p.lastIterFlowShift = iter
 
         return output
-        
-        
+    #end_time5 = time.time()
+    #print(f"Time taken for equilibratePAS: {end_time5 - start_time5} seconds")
+
+    #start_time6 = time.time()    
     def removeAPAS(self, p):
         self.allPAS.remove(p)
             
@@ -634,3 +648,8 @@ class Network:
         
         for p in removed:
             self.removeAPAS(p)
+    #end_time6 = time.time()
+    #print(f"Time taken for removePAS: {end_time6 - start_time6} seconds")
+
+
+

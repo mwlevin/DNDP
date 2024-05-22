@@ -36,9 +36,6 @@ class Path:
                 return False
         return True
     
-    def addFront(self, ij):
-        self.links.append(ij)
-    
     # returns the origin node of this path
     def getSource(self):
         return self.links[0].getStart()
